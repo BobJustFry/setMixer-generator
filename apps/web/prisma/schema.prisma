@@ -1,0 +1,104 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  passwordHash String
+  role         String   @default("admin")
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
+
+model Mix {
+  id           String     @id @default(cuid())
+  filename     String
+  filepath     String     @unique
+  title        String?
+  durationSec  Float?
+  fileSize     BigInt?
+  waveformPath String?
+  scanStatus   String     @default("pending")
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+  videoJobs    VideoJob[]
+}
+
+model VideoJob {
+  id              String          @id @default(cuid())
+  mixId           String
+  mix             Mix             @relation(fields: [mixId], references: [id], onDelete: Cascade)
+  template        String          @default("kenburns_fade")
+  status          String          @default("pending")
+  title           String?
+  stylePrompt     String?
+  errorMessage    String?
+  progress        Int             @default(0)
+  segments        Segment[]
+  generatedVideo  GeneratedVideo?
+  youtubeUpload   YouTubeUpload?
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+
+  @@index([status])
+  @@index([mixId])
+}
+
+model Segment {
+  id          String   @id @default(cuid())
+  videoJobId  String
+  videoJob    VideoJob @relation(fields: [videoJobId], references: [id], onDelete: Cascade)
+  index       Int
+  startSec    Float
+  endSec      Float
+  confidence  Float    @default(0)
+  label       String?
+  thumbPrompt String?
+  thumbPath   String?
+  source      String   @default("auto")
+
+  @@index([videoJobId])
+}
+
+model GeneratedVideo {
+  id           String   @id @default(cuid())
+  videoJobId   String   @unique
+  videoJob     VideoJob @relation(fields: [videoJobId], references: [id], onDelete: Cascade)
+  outputPath   String
+  durationSec  Float?
+  previewPath  String?
+  ffmpegLog    String?
+  createdAt    DateTime @default(now())
+}
+
+model YouTubeUpload {
+  id              String    @id @default(cuid())
+  videoJobId      String    @unique
+  videoJob        VideoJob  @relation(fields: [videoJobId], references: [id], onDelete: Cascade)
+  title           String
+  description     String
+  tags            String[]
+  categoryId      String    @default("10")
+  privacyStatus   String    @default("private")
+  publishAt       DateTime?
+  uploadStatus    String    @default("draft")
+  youtubeVideoId  String?
+  errorMessage    String?
+  uploadedAt      DateTime?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+}
+
+model YouTubeCredential {
+  id                    String   @id @default("default")
+  encryptedRefreshToken String
+  channelTitle          String?
+  channelId             String?
+  updatedAt             DateTime @updatedAt
+}

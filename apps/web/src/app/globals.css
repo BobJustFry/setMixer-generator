@@ -1,0 +1,60 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  * {
+    @apply border-surface-border;
+  }
+
+  body {
+    @apply bg-surface text-warm-100 antialiased;
+    background-image:
+      radial-gradient(ellipse at 20% 0%, rgba(196, 165, 116, 0.06) 0%, transparent 50%),
+      radial-gradient(ellipse at 80% 100%, rgba(196, 165, 116, 0.04) 0%, transparent 50%);
+    min-height: 100vh;
+  }
+
+  ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+
+  ::-webkit-scrollbar-track {
+    @apply bg-transparent;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    @apply bg-surface-border rounded-full;
+  }
+}
+
+@layer components {
+  .card {
+    @apply bg-card-gradient rounded-xl border border-surface-border shadow-card backdrop-blur-sm;
+  }
+
+  .btn {
+    @apply inline-flex items-center justify-center gap-2 rounded-lg px-4 py-2 text-sm font-medium transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed;
+  }
+
+  .btn-primary {
+    @apply btn bg-accent/90 text-surface hover:bg-accent hover:shadow-glow;
+  }
+
+  .btn-secondary {
+    @apply btn bg-surface-overlay text-warm-100 hover:bg-surface-border border border-surface-border;
+  }
+
+  .btn-ghost {
+    @apply btn text-warm-300 hover:text-warm-100 hover:bg-surface-overlay;
+  }
+
+  .input {
+    @apply w-full rounded-lg border border-surface-border bg-surface-raised px-3 py-2 text-sm text-warm-100 placeholder:text-warm-500 focus:border-accent/50 focus:outline-none focus:ring-1 focus:ring-accent/30 transition-colors;
+  }
+
+  .label {
+    @apply block text-xs font-medium text-warm-400 mb-1.5 uppercase tracking-wider;
+  }
+}

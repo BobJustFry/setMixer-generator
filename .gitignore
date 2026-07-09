@@ -1,0 +1,53 @@
+# Dependencies
+node_modules/
+.pnp
+.pnp.js
+
+# Build
+.next/
+out/
+dist/
+build/
+*.tsbuildinfo
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+*.egg-info/
+.pytest_cache/
+
+# Env & secrets
+.env
+.env.local
+.env.*.local
+
+# Data (mixes, renders — on VPS volume)
+data/mixes/*
+data/renders/*
+data/thumbs/*
+!data/mixes/.gitkeep
+!data/renders/.gitkeep
+!data/thumbs/.gitkeep
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Prisma
+apps/web/prisma/*.db
+apps/web/prisma/*.db-journal
+
+# Logs
+*.log
+npm-debug.log*
+
+# Docker
+docker-compose.override.yml

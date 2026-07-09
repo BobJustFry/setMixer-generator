@@ -1,0 +1,13 @@
+redis>=5.0.0
+psycopg2-binary>=2.9.9
+librosa>=0.10.2
+numpy>=1.26.0
+scipy>=1.11.0
+soundfile>=0.12.1
+requests>=2.31.0
+google-api-python-client>=2.111.0
+google-auth-oauthlib>=1.2.0
+google-auth-httplib2>=0.2.0
+Pillow>=10.2.0
+python-dotenv>=1.0.0
+cryptography>=42.0.0
