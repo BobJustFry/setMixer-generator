@@ -175,6 +175,7 @@ git pull && docker compose up -d --build  # обновление
 - [Локальный деплой](docs/DEPLOY.md)
 - [YouTube OAuth](docs/YOUTUBE_SETUP.md)
 - [ComfyUI](docs/COMFYUI_SETUP.md)
+- [HTTPS с доменом (Caddy)](docs/HTTPS_SETUP.md)
 
 ---
 

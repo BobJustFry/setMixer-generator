@@ -1,0 +1,9 @@
+# Стандартные 80/443 — редирект и продление сертификата Let's Encrypt
+ytb.gnh-nur.ru {
+	redir https://{host}:3000{uri} permanent
+}
+
+# Приложение + YouTube OAuth (как в Google Console)
+ytb.gnh-nur.ru:3000 {
+	reverse_proxy web:3000
+}

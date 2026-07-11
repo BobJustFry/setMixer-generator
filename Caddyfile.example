@@ -1,6 +1,10 @@
-# Не используется при локальном запуске.
-# Заготовка на будущее, если решите вынести на VPS с доменом.
-
-# example.com {
-#     reverse_proxy localhost:3000
+# Скопируйте в Caddyfile и замените домен:
+#   copy Caddyfile.example Caddyfile
+#
+# your-domain.example.com {
+#     reverse_proxy web:3000
 # }
+
+your-domain.example.com {
+	reverse_proxy web:3000
+}

@@ -1,0 +1,28 @@
+# HTTPS на порту 3000 (YouTube OAuth: https://ytb.gnh-nur.ru:3000).
+# Запуск: docker compose -f docker-compose.yml -f docker-compose.https.yml up -d
+#
+# Роутер: пробросьте TCP 3000 (обязательно), 80 и 443 (для ACME/редиректа).
+
+services:
+  caddy:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+      - "443:443/udp"
+      - "3000:3000"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      web:
+        condition: service_started
+
+  web:
+    ports: !reset []
+
+volumes:
+  caddy_data:
+  caddy_config:
