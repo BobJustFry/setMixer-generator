@@ -1,11 +1,17 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest } from "next/server";
 import { readFile } from "fs/promises";
+import { NextResponse } from "next/server";
 
 import { deleteBackground, getBackgroundImage } from "@/lib/backgrounds";
+import { toJsonResponse } from "@/lib/utils";
+import type { ImageFitMode } from "@/lib/image-utils";
+
+const ALLOWED_TYPES = new Set(["image/png", "image/jpeg", "image/webp"]);
+const VALID_FIT_MODES = new Set<ImageFitMode>(["cover", "stretch", "contain"]);
 
 export async function GET(
   _request: NextRequest,
-  { params }: { params: Promise<{ id: string; bgId: string }> }
+  { params }: { params: Promise<{ bgId: string }> }
 ) {
   const { bgId } = await params;
   const bg = await getBackgroundImage(bgId);
@@ -35,7 +41,7 @@ export async function GET(
 
 export async function DELETE(
   _request: NextRequest,
-  { params }: { params: Promise<{ id: string; bgId: string }> }
+  { params }: { params: Promise<{ bgId: string }> }
 ) {
   const { bgId } = await params;
   const result = await deleteBackground(bgId);

@@ -38,7 +38,7 @@ export async function POST(request: NextRequest) {
       return toJsonResponse({ error: "Выберите обложку" }, { status: 400 });
     }
     const bg = await prisma.mixBackground.findFirst({
-      where: { id: backgroundId, mixId, status: "ready", imagePath: { not: null } },
+      where: { id: backgroundId, status: "ready", imagePath: { not: null } },
     });
     if (!bg) {
       return toJsonResponse({ error: "Обложка не найдена или ещё генерируется" }, { status: 400 });

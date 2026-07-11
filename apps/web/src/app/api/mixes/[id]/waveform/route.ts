@@ -1,9 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { readFile } from "fs/promises";
-import path from "path";
+import { readFile, stat } from "fs/promises";
 import { prisma } from "@/lib/prisma";
-
-const DATA_DIR = process.env.DATA_DIR || path.join(process.cwd(), "..", "..", "data");
 
 export async function GET(
   _request: NextRequest,
@@ -16,11 +13,16 @@ export async function GET(
   }
 
   try {
+    const fileStat = await stat(mix.waveformPath);
     const buf = await readFile(mix.waveformPath);
+    const etag = `"wf-${fileStat.mtimeMs.toString(36)}-${fileStat.size.toString(36)}"`;
+
     return new NextResponse(buf, {
       headers: {
         "Content-Type": "image/png",
-        "Cache-Control": "public, max-age=3600",
+        "Cache-Control": "private, no-cache, must-revalidate",
+        ETag: etag,
+        "Last-Modified": fileStat.mtime.toUTCString(),
       },
     });
   } catch {

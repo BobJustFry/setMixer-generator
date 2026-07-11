@@ -5,12 +5,27 @@
       "ckpt_name": "flux1-dev-fp8.safetensors"
     }
   },
-  "5": {
-    "class_type": "EmptyLatentImage",
+  "11": {
+    "class_type": "LoadImage",
     "inputs": {
+      "image": "setmixer_ref.png"
+    }
+  },
+  "12": {
+    "class_type": "ImageScale",
+    "inputs": {
+      "image": ["11", 0],
+      "upscale_method": "lanczos",
       "width": 1536,
       "height": 864,
-      "batch_size": 1
+      "crop": "center"
+    }
+  },
+  "13": {
+    "class_type": "VAEEncode",
+    "inputs": {
+      "pixels": ["12", 0],
+      "vae": ["4", 2]
     }
   },
   "6": {
@@ -43,11 +58,11 @@
       "cfg": 1.0,
       "sampler_name": "euler",
       "scheduler": "simple",
-      "denoise": 1,
+      "denoise": 0.58,
       "model": ["4", 0],
       "positive": ["10", 0],
       "negative": ["7", 0],
-      "latent_image": ["5", 0]
+      "latent_image": ["13", 0]
     }
   },
   "8": {

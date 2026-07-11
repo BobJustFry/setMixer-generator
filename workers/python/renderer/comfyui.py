@@ -18,8 +18,11 @@ POLL_INTERVAL_SEC = 2
 POLL_TIMEOUT_SEC = 900
 KLEIN_WORKFLOW_PATH = Path(__file__).with_name("comfyui_workflow.json")
 FLUX1_WORKFLOW_PATH = Path(__file__).with_name("comfyui_workflow_flux1.json")
+FLUX1_IMG2IMG_WORKFLOW_PATH = Path(__file__).with_name("comfyui_workflow_flux1_img2img.json")
+KLEIN_IMG2IMG_WORKFLOW_PATH = Path(__file__).with_name("comfyui_workflow_klein_img2img.json")
 
 DEFAULT_MODEL = "flux1-dev-fp8.safetensors"
+REFERENCE_DENOISE = 0.58
 
 MODEL_CONFIG: dict[str, dict] = {
     "flux1-dev-fp8.safetensors": {
@@ -125,6 +128,62 @@ def _build_klein_workflow(
     wf["7"]["inputs"]["cfg"] = sampler["cfg"]
     used_seed = seed if seed is not None else random.randint(0, 2_147_483_647)
     wf["7"]["inputs"]["seed"] = used_seed
+    wf["7"]["inputs"]["control_after_generate"] = "fixed"
+    return used_seed
+
+
+def _build_flux1_img2img_workflow(
+    wf: dict,
+    prompt: str,
+    negative_prompt: str,
+    gen_w: int,
+    gen_h: int,
+    model: str,
+    sampler: dict,
+    seed: int | None,
+    reference_image: str,
+    denoise: float,
+) -> int:
+    wf["4"]["inputs"]["ckpt_name"] = model
+    wf["11"]["inputs"]["image"] = reference_image
+    wf["12"]["inputs"]["width"] = gen_w
+    wf["12"]["inputs"]["height"] = gen_h
+    wf["6"]["inputs"]["text"] = prompt
+    wf["7"]["inputs"]["text"] = negative_prompt
+    wf["10"]["inputs"]["guidance"] = sampler.get("guidance", 3.5)
+    wf["3"]["inputs"]["steps"] = sampler["steps"]
+    wf["3"]["inputs"]["cfg"] = sampler["cfg"]
+    wf["3"]["inputs"]["denoise"] = denoise
+    used_seed = seed if seed is not None else random.randint(0, 2_147_483_647)
+    wf["3"]["inputs"]["seed"] = used_seed
+    wf["3"]["inputs"]["control_after_generate"] = "fixed"
+    return used_seed
+
+
+def _build_klein_img2img_workflow(
+    wf: dict,
+    prompt: str,
+    negative_prompt: str,
+    gen_w: int,
+    gen_h: int,
+    model: str,
+    sampler: dict,
+    seed: int | None,
+    reference_image: str,
+    denoise: float,
+) -> int:
+    wf["1"]["inputs"]["unet_name"] = model
+    wf["11"]["inputs"]["image"] = reference_image
+    wf["12"]["inputs"]["width"] = gen_w
+    wf["12"]["inputs"]["height"] = gen_h
+    wf["5"]["inputs"]["text"] = prompt
+    wf["6"]["inputs"]["text"] = negative_prompt
+    wf["7"]["inputs"]["steps"] = sampler["steps"]
+    wf["7"]["inputs"]["cfg"] = sampler["cfg"]
+    wf["7"]["inputs"]["denoise"] = denoise
+    used_seed = seed if seed is not None else random.randint(0, 2_147_483_647)
+    wf["7"]["inputs"]["seed"] = used_seed
+    wf["7"]["inputs"]["control_after_generate"] = "fixed"
     return used_seed
 
 
@@ -148,6 +207,7 @@ def _build_flux1_workflow(
     wf["3"]["inputs"]["cfg"] = sampler["cfg"]
     used_seed = seed if seed is not None else random.randint(0, 2_147_483_647)
     wf["3"]["inputs"]["seed"] = used_seed
+    wf["3"]["inputs"]["control_after_generate"] = "fixed"
     return used_seed
 
 
@@ -158,17 +218,49 @@ def _build_workflow(
     target_h: int,
     model_name: str,
     seed: int | None = None,
+    reference_image: str | None = None,
 ) -> tuple[dict, int, int, int, str]:
     model, config = _resolve_model(model_name)
     gen_w, gen_h = _gen_dimensions(target_w, target_h)
     engine = config["engine"]
+    use_img2img = bool(reference_image)
 
     if engine == "flux1":
-        wf = copy.deepcopy(json.loads(FLUX1_WORKFLOW_PATH.read_text(encoding="utf-8")))
-        used_seed = _build_flux1_workflow(wf, prompt, negative_prompt, gen_w, gen_h, model, config, seed)
+        if use_img2img:
+            wf = copy.deepcopy(json.loads(FLUX1_IMG2IMG_WORKFLOW_PATH.read_text(encoding="utf-8")))
+            used_seed = _build_flux1_img2img_workflow(
+                wf,
+                prompt,
+                negative_prompt,
+                gen_w,
+                gen_h,
+                model,
+                config,
+                seed,
+                reference_image,
+                REFERENCE_DENOISE,
+            )
+        else:
+            wf = copy.deepcopy(json.loads(FLUX1_WORKFLOW_PATH.read_text(encoding="utf-8")))
+            used_seed = _build_flux1_workflow(wf, prompt, negative_prompt, gen_w, gen_h, model, config, seed)
     else:
-        wf = copy.deepcopy(json.loads(KLEIN_WORKFLOW_PATH.read_text(encoding="utf-8")))
-        used_seed = _build_klein_workflow(wf, prompt, negative_prompt, gen_w, gen_h, model, config, seed)
+        if use_img2img:
+            wf = copy.deepcopy(json.loads(KLEIN_IMG2IMG_WORKFLOW_PATH.read_text(encoding="utf-8")))
+            used_seed = _build_klein_img2img_workflow(
+                wf,
+                prompt,
+                negative_prompt,
+                gen_w,
+                gen_h,
+                model,
+                config,
+                seed,
+                reference_image,
+                REFERENCE_DENOISE,
+            )
+        else:
+            wf = copy.deepcopy(json.loads(KLEIN_WORKFLOW_PATH.read_text(encoding="utf-8")))
+            used_seed = _build_klein_workflow(wf, prompt, negative_prompt, gen_w, gen_h, model, config, seed)
 
     return wf, used_seed, gen_w, gen_h, config.get("label", "ComfyUI")
 
@@ -215,6 +307,39 @@ def _upscale_image(source_path: str, target_w: int, target_h: int) -> None:
         resized.save(source_path, format="PNG", optimize=True)
 
 
+def _upload_image(base_url: str, local_path: str) -> tuple[str | None, str | None]:
+    path = Path(local_path)
+    if not path.is_file():
+        return None, "Файл референса не найден"
+
+    upload_name = f"setmixer_ref_{uuid.uuid4().hex[:12]}{path.suffix.lower() or '.png'}"
+    mime = "image/png" if upload_name.endswith(".png") else "image/jpeg"
+
+    try:
+        with path.open("rb") as handle:
+            resp = requests.post(
+                f"{base_url}/upload/image",
+                files={"image": (upload_name, handle, mime)},
+                data={"overwrite": "true"},
+                timeout=120,
+            )
+    except requests.RequestException as e:
+        return None, f"Не удалось загрузить референс в ComfyUI: {e}"
+
+    if resp.status_code != 200:
+        return None, _parse_comfyui_error(resp)
+
+    try:
+        data = resp.json()
+    except json.JSONDecodeError:
+        return None, "ComfyUI вернул некорректный ответ при загрузке референса"
+
+    name = data.get("name")
+    if not name:
+        return None, "ComfyUI не вернул имя загруженного референса"
+    return name, None
+
+
 def generate_ai_background(
     prompt: str,
     output_path: str,
@@ -222,6 +347,7 @@ def generate_ai_background(
     height: int = 1080,
     seed: int | None = None,
     negative_prompt: str | None = None,
+    reference_path: str | None = None,
     progress_callback=None,
     cancel_check=None,
 ) -> tuple[bool, str | None, int | None]:
@@ -234,12 +360,33 @@ def generate_ai_background(
         return False, "ComfyUI не настроен — укажите URL в Настройках", None
 
     neg = (negative_prompt or "").strip() or DEFAULT_NEGATIVE_PROMPT
+
+    reference_comfy_name = None
+    if reference_path and Path(reference_path).is_file():
+        if progress_callback:
+            progress_callback(8, "Загрузка референса в ComfyUI…")
+        reference_comfy_name, upload_err = _upload_image(base_url, reference_path)
+        if upload_err:
+            return False, upload_err, None
+
     workflow, used_seed, gen_w, gen_h, model_label = _build_workflow(
-        prompt, neg, width, height, model_name, seed
+        prompt, neg, width, height, model_name, seed, reference_comfy_name
+    )
+    mode_label = "img2img" if reference_comfy_name else "txt2img"
+    log.info(
+        "ComfyUI generate (%s): model=%s seed=%s size=%dx%d (gen %dx%d)",
+        mode_label,
+        model_label,
+        used_seed,
+        width,
+        height,
+        gen_w,
+        gen_h,
     )
 
     if progress_callback:
-        progress_callback(5, f"Отправка в ComfyUI ({model_label})...")
+        detail = f"Отправка в ComfyUI ({model_label}, {mode_label})..."
+        progress_callback(5, detail)
 
     client_id = str(uuid.uuid4())
 
@@ -304,7 +451,7 @@ def generate_ai_background(
         elapsed = int(time.time() - started)
         if progress_callback:
             pct = min(90, 10 + elapsed)
-            progress_callback(pct, f"Генерация {model_label}… {elapsed}с")
+            progress_callback(pct, f"Генерация {model_label} ({mode_label})… {elapsed}с")
         time.sleep(POLL_INTERVAL_SEC)
 
     return False, "Таймаут генерации ComfyUI (15 мин)", None

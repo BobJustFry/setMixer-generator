@@ -31,4 +31,4 @@ EXPOSE 3000
 ENV PORT=3000
 ENV HOSTNAME="0.0.0.0"
 
-ENTRYPOINT ["sh", "-c", "mkdir -p /data/backgrounds /data/mixes /data/renders /data/thumbs && (chown -R nextjs:nodejs /data 2>/dev/null || chmod -R a+rwX /data 2>/dev/null || true) && exec su-exec nextjs sh -c 'npx prisma@6.1.0 migrate deploy && node server.js'"]
+ENTRYPOINT ["sh", "-c", "mkdir -p /data/backgrounds /data/references /data/mixes /data/renders /data/thumbs && (chown -R nextjs:nodejs /data 2>/dev/null || chmod -R a+rwX /data 2>/dev/null || true) && exec su-exec nextjs sh -c 'npx prisma@6.1.0 migrate deploy && node server.js'"]

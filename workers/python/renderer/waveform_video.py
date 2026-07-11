@@ -19,36 +19,19 @@ VALID_VIDEO_EFFECTS = frozenset({
     "none",
     "film_grain",
     "heavy_grain",
-    "vignette",
     "vintage_film",
     "8mm",
-    "sepia",
-    "cinematic",
-    "noir",
     "vhs",
-    "retro_tv",
-    "warm_glow",
-    "cool_blue",
-    "sunset",
-    "dreamy",
-    "faded",
-    "high_contrast",
-    "bleach_bypass",
     "analog",
-    "neon",
-    "matrix",
     "horror",
-    "scanlines",
-    "chromatic",
     "glitch",
     "flicker",
 })
 
-# FFmpeg filter chains applied after waveform compositing.
+# FFmpeg filter chains — only effects with temporal motion (noise N, allf=t, flicker).
 EFFECT_FILTERS: dict[str, str] = {
     "film_grain": "noise=alls=7:allf=t+u",
     "heavy_grain": "noise=alls=15:allf=t+u",
-    "vignette": "vignette=angle=PI/4:mode=forward",
     "vintage_film": (
         "eq=saturation=0.85:contrast=1.05:brightness=0.03,"
         "colorchannelmixer=rr=0.393:rg=0.769:rb=0.189:"
@@ -62,70 +45,20 @@ EFFECT_FILTERS: dict[str, str] = {
         "noise=alls=12:allf=t+u,"
         "geq=lum='lum(X,Y)*(0.96+0.04*sin(N/5))'"
     ),
-    "sepia": (
-        "colorchannelmixer=rr=0.393:rg=0.769:rb=0.189:"
-        "gr=0.349:gg=0.686:gb=0.168:br=0.272:bg=0.534:bb=0.131"
-    ),
-    "cinematic": (
-        "eq=contrast=1.12:brightness=0.02:saturation=1.1,"
-        "curves=r='0/0.05 0.5/0.55 1/0.92':g='0/0 0.5/0.5 1/1':b='0/0.08 0.5/0.48 1/0.88',"
-        "vignette=angle=PI/4:mode=forward"
-    ),
-    "noir": (
-        "hue=s=0,"
-        "eq=contrast=1.35:brightness=-0.03,"
-        "vignette=angle=PI/4:mode=forward"
-    ),
     "vhs": (
         "noise=alls=10:allf=t,"
         "eq=saturation=0.75:contrast=1.15,"
         "drawgrid=w=iw:h=3:t=1:c=black@0.12"
     ),
-    "retro_tv": (
-        "eq=saturation=0.82:contrast=1.08:brightness=0.02,"
-        "vignette=angle=PI/4:mode=forward,"
-        "drawgrid=w=iw:h=4:t=1:c=black@0.15"
-    ),
-    "warm_glow": (
-        "eq=saturation=1.2:contrast=1.05:gamma=1.05,"
-        "unsharp=5:5:0.4:5:5:0"
-    ),
-    "cool_blue": (
-        "eq=saturation=0.95:contrast=1.08,"
-        "colorbalance=bs=0.18:bm=0.1:bb=-0.08"
-    ),
-    "sunset": (
-        "eq=saturation=1.15:contrast=1.05:gamma_r=1.12:gamma_g=1.04:gamma_b=0.88,"
-        "colorbalance=rs=0.12:rm=0.08:rh=0.05"
-    ),
-    "dreamy": "gblur=sigma=1.5,eq=saturation=1.25:brightness=0.04",
-    "faded": "eq=contrast=0.9:brightness=0.06:saturation=0.75",
-    "high_contrast": "eq=contrast=1.35:saturation=1.15:brightness=-0.03",
-    "bleach_bypass": "eq=saturation=0.4:contrast=1.25:brightness=0.02",
     "analog": (
         "noise=alls=9:allf=t+u,"
         "vignette=angle=PI/4:mode=forward,"
         "eq=saturation=0.9:contrast=1.08"
     ),
-    "neon": (
-        "eq=saturation=1.45:contrast=1.2:brightness=0.02,"
-        "unsharp=5:5:0.6:5:5:0"
-    ),
-    "matrix": (
-        "eq=saturation=0.7:contrast=1.15,"
-        "colorbalance=gs=0.15:gm=0.1:gh=0.05,"
-        "colorbalance=bs=-0.1:bm=-0.08:bb=-0.12"
-    ),
     "horror": (
         "eq=saturation=0.55:contrast=1.3:brightness=-0.05:gamma_b=1.1,"
         "vignette=angle=PI/3:mode=forward,"
         "noise=alls=10:allf=t+u"
-    ),
-    "scanlines": "drawgrid=w=iw:h=4:t=2:c=black@0.22",
-    "chromatic": (
-        "split=2[a][b];"
-        "[a]geq=r='r(X-2,Y)':g='g(X-2,Y)':b='b(X-2,Y)'[shifted];"
-        "[b][shifted]blend=all_mode=normal:all_opacity=0.65"
     ),
     "glitch": (
         "noise=alls=22:allf=t,"
@@ -274,8 +207,8 @@ def render_waveform_video(
 
         filter_complex = (
             bg_chain
-            + f"[1:v]scale={inner_w}:{layout['wf_height']},crop=iw:{bar_h}:0:{bar_offset}[wf];"
-            + f"[{bg_label}][wf]overlay={layout['margin_x']}:{wf_overlay_y}[comp];"
+            + f"[1:v]scale={inner_w}:{layout['wf_height']},crop=iw:{bar_h}:0:{bar_offset},format=rgba[wf];"
+            + f"[{bg_label}][wf]overlay={layout['margin_x']}:{wf_overlay_y}:format=auto[comp];"
             + f"[3:v]scale={PLAYHEAD_W}:{bar_h},format=yuva420p[ph];"
             + f"[comp][ph]overlay=x='{playhead_x}':y={layout['ph_y']}:eval=frame:format=auto[{final_label}]"
         )

@@ -19,12 +19,27 @@
       "vae_name": "flux2-vae.safetensors"
     }
   },
-  "4": {
-    "class_type": "EmptyLatentImage",
+  "11": {
+    "class_type": "LoadImage",
     "inputs": {
+      "image": "setmixer_ref.png"
+    }
+  },
+  "12": {
+    "class_type": "ImageScale",
+    "inputs": {
+      "image": ["11", 0],
+      "upscale_method": "lanczos",
       "width": 1536,
       "height": 864,
-      "batch_size": 1
+      "crop": "center"
+    }
+  },
+  "13": {
+    "class_type": "VAEEncode",
+    "inputs": {
+      "pixels": ["12", 0],
+      "vae": ["3", 0]
     }
   },
   "5": {
@@ -50,11 +65,11 @@
       "cfg": 4,
       "sampler_name": "euler",
       "scheduler": "simple",
-      "denoise": 1,
+      "denoise": 0.58,
       "model": ["1", 0],
       "positive": ["5", 0],
       "negative": ["6", 0],
-      "latent_image": ["4", 0]
+      "latent_image": ["13", 0]
     }
   },
   "8": {

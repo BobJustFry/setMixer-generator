@@ -9,6 +9,7 @@ import { useTasks } from "@/components/TaskProvider";
 import { PageHeader, Card } from "@/components/ui";
 import { StatusBadge } from "@/components/StatusBadge";
 import { JobProgressSpinner } from "@/components/JobProgressDisplay";
+import { WaveformPreviewCard } from "@/components/WaveformPreviewCard";
 import { formatDuration, templateLabel } from "@/lib/utils";
 import { videoEffectLabel } from "@/lib/video-effects";
 import { parseEncodeSettings } from "@/lib/encode-settings";
@@ -24,11 +25,12 @@ interface Job {
   template: string;
   encodeSettings?: unknown;
   errorMessage: string | null;
-  mix: {
+    mix: {
     id: string;
     filename: string;
     durationSec: number | null;
     waveformPath: string | null;
+    updatedAt: string;
   };
   generatedVideo: {
     id: string;
@@ -133,6 +135,10 @@ export default function JobDetailPage() {
     status: activeTask?.status ?? job.status,
   };
   const isWorking = job.status === "analyzing" || job.status === "rendering";
+  const isBuildingWaveform =
+    job.status === "analyzing" && progressState.stage === "waveform";
+  const showWaveformSection =
+    Boolean(job.mix.waveformPath) || isWorking || job.status === "analyzing";
   const canRerender = job.mix.waveformPath && !job.generatedVideo && !isWorking;
   const canDeleteJob = !isWorking && job.status !== "pending" && !job.youtubeUpload?.youtubeVideoId;
   const encode = parseEncodeSettings(job.encodeSettings);
@@ -207,16 +213,18 @@ export default function JobDetailPage() {
         </Card>
       )}
 
-      {job.mix.waveformPath && (
+      {showWaveformSection && (
         <Card className="p-4 mb-4">
           <p className="text-xs text-warm-500 mb-2">Waveform (Denon)</p>
-          <div className="rounded-lg overflow-hidden bg-[#0e0e14] border border-surface-border">
-            <img
-              src={`/api/mixes/${job.mix.id}/waveform`}
-              alt="Waveform"
-              className="w-full h-auto block"
-            />
-          </div>
+          <WaveformPreviewCard
+            mixId={job.mix.id}
+            waveformPath={job.mix.waveformPath}
+            updatedAt={job.mix.updatedAt}
+            durationSec={job.mix.durationSec}
+            isBuilding={isBuildingWaveform}
+            stageDetail={progressState.stageDetail}
+            stageProgress={progressState.stageProgress}
+          />
           {job.mix.durationSec && (
             <p className="text-xs text-warm-500 mt-2">
               Длительность: {formatDuration(job.mix.durationSec)}

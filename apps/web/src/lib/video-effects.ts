@@ -7,117 +7,37 @@ export const VIDEO_EFFECTS = [
   {
     id: "film_grain",
     label: "Зерно плёнки",
-    description: "Лёгкое киношное зерно",
+    description: "Живое киношное зерно — шум меняется каждый кадр",
   },
   {
     id: "heavy_grain",
     label: "Грубое зерно",
-    description: "Выраженная текстура старой плёнки",
-  },
-  {
-    id: "vignette",
-    label: "Виньетка",
-    description: "Затемнение по краям кадра",
+    description: "Выраженное зерно старой плёнки с движением",
   },
   {
     id: "vintage_film",
     label: "Винтаж",
-    description: "Сепия, виньетка и зерно — старая киноплёнка",
+    description: "Сепия и виньетка + живое зерно плёнки",
   },
   {
     id: "8mm",
     label: "8mm",
-    description: "Домашнее кино: тёплый тон, зерно, мерцание",
-  },
-  {
-    id: "sepia",
-    label: "Сепия",
-    description: "Тёплый коричневый оттенок",
-  },
-  {
-    id: "cinematic",
-    label: "Кинематограф",
-    description: "Контраст, тёплая цветокоррекция и виньетка",
-  },
-  {
-    id: "noir",
-    label: "Нуар",
-    description: "Чёрно-белый с высоким контрастом",
+    description: "Домашнее кино: зерно и мерцание яркости",
   },
   {
     id: "vhs",
     label: "VHS",
-    description: "Помехи, приглушённые цвета, scanlines",
-  },
-  {
-    id: "retro_tv",
-    label: "Ретро ТВ",
-    description: "Scanlines, виньетка, слегка выцветшие цвета",
-  },
-  {
-    id: "warm_glow",
-    label: "Тёплое свечение",
-    description: "Мягкое тепло и лёгкая резкость",
-  },
-  {
-    id: "cool_blue",
-    label: "Холодный синий",
-    description: "Синеватый кинематографический тон",
-  },
-  {
-    id: "sunset",
-    label: "Закат",
-    description: "Оранжево-розовый тёплый грейд",
-  },
-  {
-    id: "dreamy",
-    label: "Мечтательный",
-    description: "Лёгкое размытие и повышенная насыщенность",
-  },
-  {
-    id: "faded",
-    label: "Выцветший",
-    description: "Приподнятые тени, приглушённые цвета",
-  },
-  {
-    id: "high_contrast",
-    label: "Высокий контраст",
-    description: "Насыщенные тени и яркие блики",
-  },
-  {
-    id: "bleach_bypass",
-    label: "Bleach bypass",
-    description: "Обесцвеченный кинематографический look",
+    description: "Помехи, scanlines и дрожание как у видеомагнитофона",
   },
   {
     id: "analog",
     label: "Аналог",
-    description: "Зерно, виньетка, слегка приглушённые цвета",
-  },
-  {
-    id: "neon",
-    label: "Неон",
-    description: "Яркие цвета и повышенная резкость",
-  },
-  {
-    id: "matrix",
-    label: "Матрица",
-    description: "Зеленоватый цифровой оттенок",
+    description: "Зерно и лёгкое движение текстуры",
   },
   {
     id: "horror",
     label: "Хоррор",
-    description: "Холодный, контрастный, зернистый",
-  },
-  {
-    id: "scanlines",
-    label: "Scanlines",
-    description: "Горизонтальные линии как на ЭЛТ-экране",
-  },
-  {
-    id: "chromatic",
-    label: "Хроматическая аберрация",
-    description: "Лёгкий RGB-сдвиг по краям",
+    description: "Холодный тон и пульсирующее зерно",
   },
   {
     id: "glitch",

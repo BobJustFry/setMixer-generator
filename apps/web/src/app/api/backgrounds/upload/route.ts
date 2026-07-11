@@ -1,24 +1,13 @@
 import { NextRequest } from "next/server";
 
 import { createUploadedBackground } from "@/lib/backgrounds";
-import { prisma } from "@/lib/prisma";
 import { toJsonResponse } from "@/lib/utils";
 import type { ImageFitMode } from "@/lib/image-utils";
 
 const ALLOWED_TYPES = new Set(["image/png", "image/jpeg", "image/webp"]);
 const VALID_FIT_MODES = new Set<ImageFitMode>(["cover", "stretch", "contain"]);
 
-export async function POST(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
-  const { id: mixId } = await params;
-
-  const mix = await prisma.mix.findUnique({ where: { id: mixId } });
-  if (!mix) {
-    return toJsonResponse({ error: "Mix not found" }, { status: 404 });
-  }
-
+export async function POST(request: NextRequest) {
   const form = await request.formData();
   const file = form.get("file");
   const resolution = form.get("resolution")?.toString() || "1080p";
@@ -28,6 +17,7 @@ export async function POST(
     : "cover";
   const sourceWidth = Number(form.get("sourceWidth"));
   const sourceHeight = Number(form.get("sourceHeight"));
+  const mixId = form.get("mixId")?.toString() || null;
 
   if (!file || !(file instanceof File)) {
     return toJsonResponse({ error: "file required" }, { status: 400 });

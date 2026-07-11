@@ -1,22 +1,22 @@
 import { NextRequest, NextResponse } from "next/server";
 import { readFile } from "fs/promises";
 
-import { deleteBackground, getBackgroundImage } from "@/lib/backgrounds";
+import { getBackgroundImage } from "@/lib/backgrounds";
 
 export async function GET(
   _request: NextRequest,
-  { params }: { params: Promise<{ id: string; bgId: string }> }
+  { params }: { params: Promise<{ bgId: string }> }
 ) {
   const { bgId } = await params;
   const bg = await getBackgroundImage(bgId);
 
-  if (!bg?.imagePath) {
+  if (!bg?.referenceImagePath) {
     return NextResponse.json({ error: "Not found" }, { status: 404 });
   }
 
   try {
-    const buf = await readFile(bg.imagePath);
-    const ext = bg.imagePath.toLowerCase();
+    const buf = await readFile(bg.referenceImagePath);
+    const ext = bg.referenceImagePath.toLowerCase();
     const type = ext.endsWith(".png")
       ? "image/png"
       : ext.endsWith(".webp")
@@ -31,16 +31,4 @@ export async function GET(
   } catch {
     return NextResponse.json({ error: "File missing" }, { status: 404 });
   }
-}
-
-export async function DELETE(
-  _request: NextRequest,
-  { params }: { params: Promise<{ id: string; bgId: string }> }
-) {
-  const { bgId } = await params;
-  const result = await deleteBackground(bgId);
-  if (!result.ok) {
-    return NextResponse.json({ error: result.error }, { status: result.status });
-  }
-  return NextResponse.json({ ok: true });
 }

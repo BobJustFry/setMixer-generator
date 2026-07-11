@@ -18,6 +18,7 @@ configure_cpu_threads()
 
 from analyzer import waveform as audio_waveform
 from renderer.images import generate_ai_background
+from renderer.cover_text import apply_cover_text
 from renderer.waveform_video import render_waveform_video, parse_encode_settings
 from youtube.uploader import upload_to_youtube
 from worker.tasks import (
@@ -237,10 +238,12 @@ def handle_analyze(video_job_id: str, task_id: str | None):
         waveforms_dir = Path(DATA_DIR) / "waveforms"
         waveforms_dir.mkdir(parents=True, exist_ok=True)
         waveform_path = str(waveforms_dir / f"{mix_id}.png")
+        Path(waveform_path).unlink(missing_ok=True)
 
         def on_wave_progress(pct: int, detail: str):
             sync_stage("waveform", pct, detail)
 
+        log.info("Generating Denon 3-band waveform for mix %s", mix_id)
         duration = audio_waveform.generate_waveform(
             job["filepath"],
             waveform_path,
@@ -403,7 +406,7 @@ def handle_generate_background(mix_background_id: str, task_id: str | None):
             stageDetail="Запуск генерации...",
         )
 
-    backgrounds_dir = Path(DATA_DIR) / "backgrounds" / bg["mixId"]
+    backgrounds_dir = Path(DATA_DIR) / "backgrounds"
     backgrounds_dir.mkdir(parents=True, exist_ok=True)
     output_path = str(backgrounds_dir / f"{mix_background_id}.png")
     prompt = (bg.get("prompt") or "").strip() or (
@@ -431,6 +434,7 @@ def handle_generate_background(mix_background_id: str, task_id: str | None):
             int(bg.get("height") or 1080),
             seed=requested_seed,
             negative_prompt=bg.get("negativePrompt"),
+            reference_path=bg.get("referenceImagePath"),
             progress_callback=on_progress,
             cancel_check=lambda: is_cancelled(task_id),
         )
@@ -443,6 +447,26 @@ def handle_generate_background(mix_background_id: str, task_id: str | None):
             update_mix_background(mix_background_id, status="failed", errorMessage=error[:500])
             fail_task(task_id, error[:500])
             return
+
+        cover_text = (bg.get("coverText") or "").strip()
+        if cover_text:
+            on_progress(92, "Нанесение надписи на обложку…")
+            try:
+                apply_cover_text(
+                    output_path,
+                    cover_text,
+                    int(bg.get("width") or 1920),
+                    int(bg.get("height") or 1080),
+                )
+            except Exception as e:
+                log.exception("Cover text overlay failed")
+                update_mix_background(
+                    mix_background_id,
+                    status="failed",
+                    errorMessage=f"Надпись на обложке: {e}"[:500],
+                )
+                fail_task(task_id, str(e)[:500])
+                return
 
         update_mix_background(
             mix_background_id,

@@ -2,7 +2,6 @@ import path from "path";
 import fs from "fs/promises";
 import { prisma } from "./prisma";
 import { deleteGeneratedVideoFiles } from "./job-cleanup";
-import { getBackgroundsDir } from "./storage";
 
 export async function removeStaleMixes(): Promise<number> {
   const mixes = await prisma.mix.findMany({
@@ -33,12 +32,6 @@ export async function removeStaleMixes(): Promise<number> {
       } catch {
         /* ignore */
       }
-    }
-
-    try {
-      await fs.rm(path.join(getBackgroundsDir(), mix.id), { recursive: true, force: true });
-    } catch {
-      /* ignore */
     }
 
     await prisma.mix.delete({ where: { id: mix.id } });

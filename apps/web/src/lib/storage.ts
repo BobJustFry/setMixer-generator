@@ -21,8 +21,23 @@ export function getBackgroundsDir(): string {
   return path.join(getDataDir(), "backgrounds");
 }
 
-export async function ensureBackgroundsDir(mixId: string): Promise<string> {
-  const dir = path.join(getBackgroundsDir(), mixId);
+export function getReferencesDir(): string {
+  return path.join(getDataDir(), "references");
+}
+
+export async function ensureReferencesDir(): Promise<string> {
+  const dir = getReferencesDir();
+  await fs.mkdir(dir, { recursive: true, mode: 0o777 });
+  try {
+    await fs.chmod(dir, 0o777);
+  } catch {
+    // Windows bind mounts may ignore chmod
+  }
+  return dir;
+}
+
+export async function ensureBackgroundsDir(): Promise<string> {
+  const dir = getBackgroundsDir();
   await fs.mkdir(dir, { recursive: true, mode: 0o777 });
   try {
     await fs.chmod(dir, 0o777);
@@ -44,6 +59,7 @@ export async function ensureDataDirs(): Promise<void> {
     fs.mkdir(getRendersDir(), { recursive: true }),
     fs.mkdir(getThumbsDir(), { recursive: true }),
     fs.mkdir(getBackgroundsDir(), { recursive: true }),
+    fs.mkdir(getReferencesDir(), { recursive: true }),
   ]);
 }
 

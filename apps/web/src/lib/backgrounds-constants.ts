@@ -1,0 +1,1 @@
+export const BACKGROUNDS_PAGE_SIZE = 48;

@@ -51,12 +51,14 @@ model VideoJob {
 
 model MixBackground {
   id           String     @id @default(cuid())
-  mixId        String
-  mix          Mix        @relation(fields: [mixId], references: [id], onDelete: Cascade)
+  mixId        String?
+  mix          Mix?       @relation(fields: [mixId], references: [id], onDelete: SetNull)
   source       String
   prompt       String?
   negativePrompt String?
   label        String?
+  coverText    String?
+  referenceImagePath String?
   imagePath    String?
   width        Int        @default(1920)
   height       Int        @default(1080)
