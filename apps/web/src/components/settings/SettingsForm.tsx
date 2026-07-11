@@ -45,6 +45,12 @@ interface SettingsData {
 
     channelId: string | null;
 
+    channels: { id: string; title: string; thumbnailUrl: string | null }[];
+
+    channelsError: string | null;
+
+    authUrl: string | null;
+
   };
 
   comfyui: {
@@ -185,6 +191,10 @@ export function SettingsForm() {
 
   const [jsonError, setJsonError] = useState<string | null>(null);
 
+  const [channelSaving, setChannelSaving] = useState(false);
+
+  const [channelError, setChannelError] = useState<string | null>(null);
+
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const { refresh: refreshTasks } = useTasks();
@@ -229,6 +239,29 @@ export function SettingsForm() {
 
     setStatus(data);
 
+  }
+
+
+
+  async function handleChannelChange(channelId: string) {
+    setChannelSaving(true);
+    setChannelError(null);
+    try {
+      const res = await fetch("/api/youtube/channel", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ channelId }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.error || "Не удалось сменить канал");
+      }
+      await loadSettings();
+    } catch (e) {
+      setChannelError(e instanceof Error ? e.message : "Ошибка");
+    } finally {
+      setChannelSaving(false);
+    }
   }
 
 
@@ -356,11 +389,91 @@ export function SettingsForm() {
 
           {status?.youtube.connected && (
 
-            <p className="text-sm text-warm-100 mb-4">
+            <div className="mb-4">
 
-              Канал: {status.youtube.channelTitle || status.youtube.channelId}
+              <label className="label">Канал для загрузки</label>
 
-            </p>
+              {status.youtube.channels.length > 0 ? (
+
+                <select
+
+                  className="input text-sm"
+
+                  value={status.youtube.channelId || ""}
+
+                  disabled={channelSaving || status.youtube.channels.length <= 1}
+
+                  onChange={(e) => handleChannelChange(e.target.value)}
+
+                >
+
+                  {status.youtube.channels.map((ch) => (
+
+                    <option key={ch.id} value={ch.id}>
+
+                      {ch.title}
+
+                    </option>
+
+                  ))}
+
+                </select>
+
+              ) : (
+
+                <p className="text-sm text-warm-100">
+
+                  {status.youtube.channelTitle || status.youtube.channelId || "—"}
+
+                </p>
+
+              )}
+
+              {status.youtube.channelsError && (
+
+                <p className="text-xs text-amber-400/90 mt-1 flex items-start gap-1">
+
+                  <AlertCircle className="w-3 h-3 shrink-0 mt-0.5" />
+
+                  Не удалось обновить список каналов: {status.youtube.channelsError}. Показан сохранённый канал.
+
+                </p>
+
+              )}
+
+              {!status.youtube.channelsError && status.youtube.channels.length <= 1 && status.youtube.channelTitle && (
+
+                <p className="text-xs text-warm-500 mt-1">
+
+                  YouTube API видит один канал для этого OAuth-токена. Brand-каналы на другом Google-аккаунте или без доступа API сюда не попадут — переподключите Google и выберите нужный канал на экране Google.
+
+                </p>
+
+              )}
+
+              {status.youtube.channels.length > 1 && (
+
+                <p className="text-xs text-warm-500 mt-1">
+
+                  Выберите канал, на который будут загружаться видео из «Расписания».
+
+                </p>
+
+              )}
+
+              {channelError && (
+
+                <p className="text-xs text-red-400 mt-2 flex items-center gap-1">
+
+                  <AlertCircle className="w-3 h-3 shrink-0" />
+
+                  {channelError}
+
+                </p>
+
+              )}
+
+            </div>
 
           )}
 
@@ -562,17 +675,17 @@ export function SettingsForm() {
 
 
 
-          {verifyResult?.youtube.authUrl && !verifyResult.youtube.connected && (
-
-            <a href={verifyResult.youtube.authUrl} className="btn-primary mt-4 inline-flex">
-
-              <ExternalLink className="w-4 h-4" />
-
-              Шаг 3 — Авторизоваться в Google
-
-            </a>
-
-          )}
+          {(() => {
+            const ytConnected = verifyResult?.youtube.connected ?? status?.youtube.connected;
+            const authUrl = verifyResult?.youtube.authUrl ?? status?.youtube.authUrl;
+            if (!authUrl || ytConnected) return null;
+            return (
+              <a href={authUrl} className="btn-primary mt-4 inline-flex">
+                <ExternalLink className="w-4 h-4" />
+                Авторизоваться в Google
+              </a>
+            );
+          })()}
 
 
 

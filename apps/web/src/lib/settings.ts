@@ -1,7 +1,9 @@
 import { prisma } from "./prisma";
+import { getYouTubeStatus } from "./youtube";
 import { decrypt, encrypt, generateEncryptionKey } from "./crypto";
 import { normalizeComfyuiUrl } from "./comfyui-url";
 import { DEFAULT_COMFYUI_MODEL } from "./comfyui-models";
+import type { YouTubeChannel } from "./youtube";
 
 export interface SettingsInput {
   youtubeClientId?: string;
@@ -23,6 +25,9 @@ export interface SettingsView {
     connected: boolean;
     channelTitle: string | null;
     channelId: string | null;
+    channels: YouTubeChannel[];
+    channelsError: string | null;
+    authUrl: string | null;
   };
   comfyui: {
     configured: boolean;
@@ -84,9 +89,7 @@ export async function getDecryptedSecrets(): Promise<{
 
 export async function getSettingsView(): Promise<SettingsView> {
   const row = await getOrCreateSettings();
-  const ytCred = await prisma.youTubeCredential.findUnique({
-    where: { id: "default" },
-  });
+  const ytStatus = await getYouTubeStatus();
 
   return {
     youtubeClientId: row.youtubeClientId || "",
@@ -96,10 +99,13 @@ export async function getSettingsView(): Promise<SettingsView> {
     appUrl: row.appUrl,
     hasYoutubeClientSecret: !!row.youtubeClientSecret,
     youtube: {
-      configured: !!(row.youtubeClientId && row.youtubeClientSecret),
-      connected: !!ytCred,
-      channelTitle: ytCred?.channelTitle || null,
-      channelId: ytCred?.channelId || null,
+      configured: ytStatus.configured,
+      connected: ytStatus.connected,
+      channelTitle: ytStatus.channelTitle,
+      channelId: ytStatus.channelId,
+      channels: ytStatus.channels,
+      channelsError: ytStatus.channelsError,
+      authUrl: ytStatus.authUrl,
     },
     comfyui: {
       configured: !!row.comfyuiUrl,

@@ -37,10 +37,15 @@ def _get_youtube_service():
 
     with _get_db() as conn:
         with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
-            cur.execute('SELECT "encryptedRefreshToken" FROM "YouTubeCredential" WHERE id = %s', ("default",))
+            cur.execute('SELECT "encryptedRefreshToken", "channelId", "channelTitle" FROM "YouTubeCredential" WHERE id = %s', ("default",))
             row = cur.fetchone()
     if not row:
         raise RuntimeError("YouTube not connected")
+
+    channel_id = row.get("channelId")
+    channel_title = row.get("channelTitle")
+    if channel_id:
+        log.info("Upload target channel: %s (%s)", channel_title or channel_id, channel_id)
 
     creds = Credentials(
         token=None,

@@ -45,7 +45,19 @@ function ScheduleContent() {
     publishAt: "",
   });
   const [submitting, setSubmitting] = useState(false);
+  const [youtubeChannel, setYoutubeChannel] = useState<string | null>(null);
   const { refresh: refreshTasks } = useTasks();
+
+  useEffect(() => {
+    fetch("/api/youtube/status")
+      .then((r) => r.json())
+      .then((data) => {
+        if (data.connected && data.channelTitle) {
+          setYoutubeChannel(data.channelTitle);
+        }
+      })
+      .catch(() => {});
+  }, []);
 
   useEffect(() => {
     fetch("/api/youtube/uploads")
@@ -108,6 +120,16 @@ function ScheduleContent() {
 
       {showForm && (
         <Card className="mb-6">
+          {youtubeChannel && (
+            <p className="text-xs text-warm-500 mb-4 pb-3 border-b border-surface-border">
+              Канал для загрузки:{" "}
+              <span className="text-warm-300">{youtubeChannel}</span>
+              {" · "}
+              <a href="/settings" className="text-accent hover:underline">
+                сменить в настройках
+              </a>
+            </p>
+          )}
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
               <label className="label">Видео</label>
