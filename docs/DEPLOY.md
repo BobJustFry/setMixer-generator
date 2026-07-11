@@ -129,9 +129,11 @@ python main.py
 - JavaScript origin: `http://localhost:3000`
 - Redirect URI: `http://localhost:3000/api/youtube/callback`
 
-## AI-обложки
+## AI-обложки (ComfyUI)
 
-Опционально: `REPLICATE_API_TOKEN` в `.env`. Без токена — градиентные placeholder-обложки.
+Локальная генерация через ComfyUI на вашем ПК. См. [COMFYUI_SETUP.md](COMFYUI_SETUP.md).
+
+URL по умолчанию для Docker: `http://host.docker.internal:8000`. Без ComfyUI — загрузка своих изображений или градиентный фон.
 
 ## Бэкап
 

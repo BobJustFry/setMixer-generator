@@ -4,17 +4,29 @@
 
 ## Быстрый старт
 
-1. Запустите **ComfyUI Desktop** (у вас обычно `http://127.0.0.1:8000` в браузере).
-2. Checkpoint SDXL: `sd_xl_base_1.0.safetensors` в `P:\ComfyUI\models\checkpoints\`
+1. Установите и запустите [ComfyUI](https://github.com/comfyanonymous/ComfyUI) на компьютере (обычно `http://127.0.0.1:8000` в браузере).
+2. Скачайте модель из списка в **Настройки → ComfyUI**, например:
+   - `flux1-dev-fp8.safetensors` — максимальное качество (~1–3 мин)
+   - `flux-2-klein-4b-fp8.safetensors` — быстрый режим (~15 с)
 3. В SetMixer укажите:
-   - **URL:** `http://host.docker.internal:8000` (не `127.0.0.1` — worker в Docker)
-   - **Checkpoint:** `sd_xl_base_1.0.safetensors`
+   - **URL:** `http://host.docker.internal:8000` (не `127.0.0.1` — worker работает в Docker)
+   - **Checkpoint:** имя файла модели
 4. **Сохранить и проверить**
 
-## Шаблон workflow
+## Режимы генерации
 
-Встроен SDXL txt2img (1920×1080 или 1280×720). Worker подставляет prompt, размер и checkpoint автоматически.
+- **txt2img** — prompt + negative prompt, пресеты в форме «Создать видео»
+- **img2img** — загрузите референс-фото; worker использует отдельный ComfyUI workflow
+- **Своя обложка** — загрузка PNG/JPG без ComfyUI
+
+После генерации опционально рисуется **текст на обложке** (поле «Надпись») — адаптивный цвет, верхняя зона.
 
 ## Сеть
 
-Worker в Docker обращается к ComfyUI на хосте через `host.docker.internal:8000`. Проброс портов наружу не нужен.
+Worker в Docker обращается к ComfyUI на хосте через `host.docker.internal:8000`. Проброс портов на роутере не нужен.
+
+На Linux без Docker Desktop может понадобиться `extra_hosts: host-gateway` (уже есть в `docker-compose.yml`).
+
+## Без ComfyUI
+
+Можно использовать тёмный/градиентный шаблон или загрузить готовое изображение. AI-генерация будет недоступна.

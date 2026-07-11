@@ -23,13 +23,26 @@ venv/
 .env.local
 .env.*.local
 
-# Data (mixes, renders — on VPS volume)
+# Data (local media — never commit)
 data/mixes/*
 data/renders/*
 data/thumbs/*
+data/backgrounds/*
+data/waveforms/*
+data/references/*
 !data/mixes/.gitkeep
 !data/renders/.gitkeep
 !data/thumbs/.gitkeep
+!data/backgrounds/.gitkeep
+!data/waveforms/.gitkeep
+!data/references/.gitkeep
+
+# Accidental root assets
+/*.png
+/*.jpg
+/*.jpeg
+/*.mp3
+/*.mp4
 
 # IDE
 .idea/
