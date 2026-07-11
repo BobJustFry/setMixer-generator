@@ -4,6 +4,8 @@ import { useEffect, useState, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import { PageHeader, Card, EmptyState } from "@/components/ui";
 import { StatusBadge } from "@/components/StatusBadge";
+import { LoadingButton } from "@/components/LoadingButton";
+import { useTasks } from "@/components/TaskProvider";
 
 interface Upload {
   id: string;
@@ -43,6 +45,7 @@ function ScheduleContent() {
     publishAt: "",
   });
   const [submitting, setSubmitting] = useState(false);
+  const { refresh: refreshTasks } = useTasks();
 
   useEffect(() => {
     fetch("/api/youtube/uploads")
@@ -85,6 +88,7 @@ function ScheduleContent() {
 
     if (res.ok) {
       setShowForm(false);
+      await refreshTasks();
       const updated = await fetch("/api/youtube/uploads").then((r) => r.json());
       setUploads(updated);
     }
@@ -170,9 +174,9 @@ function ScheduleContent() {
                 />
               </div>
             </div>
-            <button type="submit" className="btn-primary" disabled={submitting}>
-              {submitting ? "Отправка..." : "Запланировать"}
-            </button>
+            <LoadingButton type="submit" loading={submitting} loadingText="Отправка...">
+              Запланировать
+            </LoadingButton>
           </form>
         </Card>
       )}

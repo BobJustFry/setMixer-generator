@@ -1,13 +1,6 @@
-# Fragment for existing Caddy on VPS
-# Add to your main Caddyfile:
+# Не используется при локальном запуске.
+# Заготовка на будущее, если решите вынести на VPS с доменом.
 
-setmixer.ru {
-    reverse_proxy localhost:3000
-}
-
-# Optional: restrict by IP
-# setmixer.ru {
-#     @blocked not remote_ip YOUR.IP.HERE
-#     respond @blocked 403
+# example.com {
 #     reverse_proxy localhost:3000
 # }

@@ -1,61 +1,51 @@
-# Настройка YouTube API
+# Локальный запуск
 
-## 1. Google Cloud Console
+Приложение работает на `http://localhost:3000` на вашем ПК.
 
-1. Откройте https://console.cloud.google.com/
-2. Создайте проект (или выберите существующий)
-3. **APIs & Services** → **Enable APIs** → включите **YouTube Data API v3**
+**Важно:** YouTube и Replicate не подключаются к вашему компьютеру как к серверу:
+- **YouTube OAuth** — редирект идёт в ваш браузер на App URL (localhost достаточно)
+- **Replicate** — worker опрашивает API (polling), webhook не используются
+- **Загрузка на YouTube** — исходящие запросы с ПК
 
-## 2. OAuth consent screen
+Проброс порта **3000** на роутере нужен только при доступе с другого устройства или App URL с LAN/внешним IP. В **Настройках** → «Определить IP» → подставить нужный адрес.
 
-1. **APIs & Services** → **OAuth consent screen**
-2. User Type: **External**
-3. Заполните название приложения
-4. Scopes: добавьте `youtube.upload` и `youtube.readonly`
-5. Test users: добавьте ваш Google-аккаунт (email канала YouTube)
+## Кратко
 
-## 3. Credentials
+1. [Google Cloud Console](https://console.cloud.google.com/) → проект
+2. Включить [YouTube Data API v3](https://console.cloud.google.com/apis/library/youtube.googleapis.com)
+3. [OAuth consent screen](https://console.cloud.google.com/auth/audience) → External, scopes upload + readonly, **Test users** = ваш email
+4. [OAuth Client](https://console.cloud.google.com/auth/clients) → Web application:
+   - **JavaScript origins:** `http://localhost:3000`
+   - **Redirect URI:** `http://localhost:3000/api/youtube/callback`
+5. Импорт JSON или Client ID + Secret → **Сохранить и проверить** → **Авторизоваться в Google**
 
-1. **APIs & Services** → **Credentials** → **Create Credentials** → **OAuth client ID**
-2. Application type: **Web application**
-3. Authorized redirect URIs:
-   - `https://setmixer.ru/api/youtube/callback`
-   - (для локальной разработки) `http://localhost:3000/api/youtube/callback`
-4. Скопируйте **Client ID** и **Client Secret** в `.env`:
+Значения Origin и Redirect URI копируются из формы настроек — они зависят от поля **App URL**.
 
-```env
-YOUTUBE_CLIENT_ID=your-client-id.apps.googleusercontent.com
-YOUTUBE_CLIENT_SECRET=your-client-secret
-YOUTUBE_REDIRECT_URI=https://setmixer.ru/api/youtube/callback
-```
+## Важно
 
-## 4. Подключение в приложении
+- **Client Secret** Google показывает только при создании client — сохраните JSON сразу
+- Изменения в Google Console могут применяться **5 минут — несколько часов**
+- В режиме **Testing** только email из Test users может авторизоваться
+- Redirect URI должен совпадать **буквально** (http/https, порт, без лишнего слэша)
 
-1. Откройте https://setmixer.ru/settings
-2. Нажмите **Подключить YouTube**
-3. Разрешите доступ аккаунту канала
+## Отложенная публикация
 
-## 5. Отложенная публикация
-
-- Установите **Видимость**: «Приватное»
-- Укажите **Дату публикации** — YouTube опубликует автоматически
-- Видео загружается сразу, публикация — по расписанию
+- Видимость: «Приватное»
+- Укажите дату — YouTube опубликует автоматически
 
 ## Квоты
 
-YouTube Data API: ~10 000 units/день. Одна загрузка ≈ 1600 units (~6 видео/день).
-При превышении квоты загрузка вернёт ошибку — повторите на следующий день.
+YouTube Data API: ~10 000 units/день (~6 загрузок видео в день).
 
-## AI-обложки (опционально)
+---
 
-Для генерации обложек через Replicate:
+# Replicate (AI-обложки)
 
-1. Зарегистрируйтесь на https://replicate.com
-2. Создайте API token
-3. Добавьте в `.env`:
+Токен в **Настройки** → Replicate → **(i)**.
 
-```env
-REPLICATE_API_TOKEN=r8_...
-```
+1. https://replicate.com → регистрация
+2. Billing при необходимости
+3. API Tokens → Create token → `r8_...`
+4. **Сохранить и проверить**
 
-Без токена используются градиентные placeholder-обложки.
+Без токена: тёмный/градиентный фон, AI недоступен.

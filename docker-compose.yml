@@ -30,6 +30,8 @@ services:
     restart: unless-stopped
     ports:
       - "3000:3000"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     env_file:
       - .env
     environment:
@@ -49,6 +51,8 @@ services:
       context: ./workers/python
       dockerfile: Dockerfile
     restart: unless-stopped
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     env_file:
       - .env
     environment:

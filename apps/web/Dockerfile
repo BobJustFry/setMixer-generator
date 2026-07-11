@@ -1,5 +1,5 @@
 FROM node:20-alpine AS base
-RUN apk add --no-cache libc6-compat openssl
+RUN apk add --no-cache libc6-compat openssl su-exec
 WORKDIR /app
 
 FROM base AS deps
@@ -27,9 +27,8 @@ COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
 COPY --from=builder /app/node_modules/.prisma ./node_modules/.prisma
 COPY --from=builder /app/node_modules/@prisma ./node_modules/@prisma
 
-USER nextjs
 EXPOSE 3000
 ENV PORT=3000
 ENV HOSTNAME="0.0.0.0"
 
-CMD ["sh", "-c", "npx prisma@6.1.0 migrate deploy && node prisma/seed.js && node server.js"]
+ENTRYPOINT ["sh", "-c", "mkdir -p /data/backgrounds /data/mixes /data/renders /data/thumbs && (chown -R nextjs:nodejs /data 2>/dev/null || chmod -R a+rwX /data 2>/dev/null || true) && exec su-exec nextjs sh -c 'npx prisma@6.1.0 migrate deploy && node server.js'"]

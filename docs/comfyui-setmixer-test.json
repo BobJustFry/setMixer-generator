@@ -1,0 +1,65 @@
+{
+  "3": {
+    "class_type": "KSampler",
+    "inputs": {
+      "seed": 42,
+      "steps": 25,
+      "cfg": 7,
+      "sampler_name": "euler",
+      "scheduler": "normal",
+      "denoise": 1,
+      "model": ["4", 0],
+      "positive": ["6", 0],
+      "negative": ["7", 0],
+      "latent_image": ["5", 0]
+    }
+  },
+  "4": {
+    "class_type": "CheckpointLoaderSimple",
+    "inputs": {
+      "ckpt_name": "sd_xl_base_1.0.safetensors"
+    }
+  },
+  "5": {
+    "class_type": "EmptyLatentImage",
+    "inputs": {
+      "width": 1920,
+      "height": 1080,
+      "batch_size": 1
+    }
+  },
+  "6": {
+    "class_type": "CLIPTextEncode",
+    "inputs": {
+      "text": "A cinematic extreme-angle back view of an anthropomorphic rabbit character sitting casually on the very edge of a futuristic cityscape skyscraper rooftop during a rainy day. The character, a furry bipedal rabbit, wears a rugged, khaki-green bomber jacket and large professional DJ headphones on its head (covering the ears), with its long rabbit ears poking through the top structure of the headphones. A small, well-worn, vintage-style backpack with patches is on its back. The rabbit is centered on the left third of the image (Rule of Thirds), occupying about 1/3 of the frame, gazing out over the sprawling, cyberpunk-style futuristic city with neon lights reflecting off wet surfaces and through the rain. The view is from a high rooftop, looking slightly down and across. Water droplets on the lens, dark atmosphere, photorealistic, 8k, highly detailed, film grain, dramatic lighting.",
+      "clip": ["4", 1]
+    }
+  },
+  "7": {
+    "class_type": "CLIPTextEncode",
+    "inputs": {
+      "text": "text, watermark, logo, blurry, low quality",
+      "clip": ["4", 1]
+    }
+  },
+  "8": {
+    "class_type": "VAEDecode",
+    "inputs": {
+      "samples": ["3", 0],
+      "vae": ["10", 0]
+    }
+  },
+  "9": {
+    "class_type": "SaveImage",
+    "inputs": {
+      "filename_prefix": "setmixer",
+      "images": ["8", 0]
+    }
+  },
+  "10": {
+    "class_type": "VAELoader",
+    "inputs": {
+      "vae_name": "taesdxl"
+    }
+  }
+}

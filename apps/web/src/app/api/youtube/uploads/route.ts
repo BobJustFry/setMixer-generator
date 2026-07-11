@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { enqueueJob } from "@/lib/queue";
+import { enqueueWithTask } from "@/lib/tasks";
 
 export async function GET() {
   const uploads = await prisma.youTubeUpload.findMany({
@@ -58,7 +58,10 @@ export async function POST(request: NextRequest) {
     },
   });
 
-  await enqueueJob({ type: "youtube_upload", videoJobId, uploadId: upload.id });
+  const { taskId } = await enqueueWithTask(
+    { type: "youtube_upload", videoJobId, uploadId: upload.id },
+    { type: "youtube_upload", title: `YouTube: ${title}`, videoJobId, uploadId: upload.id }
+  );
 
-  return NextResponse.json(upload, { status: 201 });
+  return NextResponse.json({ ...upload, taskId }, { status: 201 });
 }

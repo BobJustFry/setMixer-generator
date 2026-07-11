@@ -17,6 +17,21 @@ export function getThumbsDir(): string {
   return path.join(getDataDir(), "thumbs");
 }
 
+export function getBackgroundsDir(): string {
+  return path.join(getDataDir(), "backgrounds");
+}
+
+export async function ensureBackgroundsDir(mixId: string): Promise<string> {
+  const dir = path.join(getBackgroundsDir(), mixId);
+  await fs.mkdir(dir, { recursive: true, mode: 0o777 });
+  try {
+    await fs.chmod(dir, 0o777);
+  } catch {
+    // Windows bind mounts may ignore chmod
+  }
+  return dir;
+}
+
 const AUDIO_EXTENSIONS = new Set([".mp3", ".wav", ".flac", ".m4a", ".aac", ".ogg"]);
 
 export function isAudioFile(filename: string): boolean {
@@ -28,6 +43,7 @@ export async function ensureDataDirs(): Promise<void> {
     fs.mkdir(getMixesDir(), { recursive: true }),
     fs.mkdir(getRendersDir(), { recursive: true }),
     fs.mkdir(getThumbsDir(), { recursive: true }),
+    fs.mkdir(getBackgroundsDir(), { recursive: true }),
   ]);
 }
 

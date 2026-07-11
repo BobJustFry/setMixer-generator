@@ -1,0 +1,1 @@
+ALTER TABLE "VideoJob" ADD COLUMN IF NOT EXISTS "encodeSettings" JSONB;

@@ -5,7 +5,7 @@ import "./globals.css";
 const inter = Inter({ subsets: ["latin", "cyrillic"] });
 
 export const metadata: Metadata = {
-  title: "SetMixer Generator",
+  title: "setmix.er Generator",
   description: "YouTube video generator for DJ mixes",
 };
 

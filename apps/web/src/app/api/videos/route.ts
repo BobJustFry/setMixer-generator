@@ -1,5 +1,5 @@
-import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { toJsonResponse } from "@/lib/utils";
 
 export async function GET() {
   const videos = await prisma.generatedVideo.findMany({
@@ -13,5 +13,5 @@ export async function GET() {
       },
     },
   });
-  return NextResponse.json(videos);
+  return toJsonResponse(videos);
 }

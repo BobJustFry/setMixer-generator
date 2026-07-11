@@ -1,0 +1,73 @@
+{
+  "1": {
+    "class_type": "UNETLoader",
+    "inputs": {
+      "unet_name": "flux-2-klein-4b-fp8.safetensors",
+      "weight_dtype": "default"
+    }
+  },
+  "2": {
+    "class_type": "CLIPLoader",
+    "inputs": {
+      "clip_name": "qwen_3_4b.safetensors",
+      "type": "flux2"
+    }
+  },
+  "3": {
+    "class_type": "VAELoader",
+    "inputs": {
+      "vae_name": "flux2-vae.safetensors"
+    }
+  },
+  "4": {
+    "class_type": "EmptyLatentImage",
+    "inputs": {
+      "width": 1344,
+      "height": 768,
+      "batch_size": 1
+    }
+  },
+  "5": {
+    "class_type": "CLIPTextEncode",
+    "inputs": {
+      "text": "A cinematic extreme-angle back view of an anthropomorphic rabbit character sitting casually on the very edge of a futuristic cityscape skyscraper rooftop during a rainy day. The character, a furry bipedal rabbit, wears a rugged, khaki-green bomber jacket and large professional DJ headphones on its head (covering the ears), with its long rabbit ears poking through the top structure of the headphones. A small, well-worn, vintage-style backpack with patches is on its back. The rabbit is centered on the left third of the image (Rule of Thirds), occupying about 1/3 of the frame, gazing out over the sprawling, cyberpunk-style futuristic city with neon lights reflecting off wet surfaces and through the rain. The view is from a high rooftop, looking slightly down and across. Water droplets on the lens, dark atmosphere, photorealistic, 8k, highly detailed, film grain, dramatic lighting.",
+      "clip": ["2", 0]
+    }
+  },
+  "6": {
+    "class_type": "CLIPTextEncode",
+    "inputs": {
+      "text": "",
+      "clip": ["2", 0]
+    }
+  },
+  "7": {
+    "class_type": "KSampler",
+    "inputs": {
+      "seed": 642209498,
+      "steps": 4,
+      "cfg": 1.0,
+      "sampler_name": "euler",
+      "scheduler": "simple",
+      "denoise": 1,
+      "model": ["1", 0],
+      "positive": ["5", 0],
+      "negative": ["6", 0],
+      "latent_image": ["4", 0]
+    }
+  },
+  "8": {
+    "class_type": "VAEDecode",
+    "inputs": {
+      "samples": ["7", 0],
+      "vae": ["3", 0]
+    }
+  },
+  "9": {
+    "class_type": "SaveImage",
+    "inputs": {
+      "filename_prefix": "setmixer_klein",
+      "images": ["8", 0]
+    }
+  }
+}

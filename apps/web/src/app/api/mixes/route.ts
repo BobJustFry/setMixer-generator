@@ -1,17 +1,20 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { removeStaleMixes } from "@/lib/mix-cleanup";
 import { scanMixesFolder } from "@/lib/storage";
-import { enqueueJob } from "@/lib/queue";
+import { enqueueWithTask } from "@/lib/tasks";
+import { toJsonResponse } from "@/lib/utils";
 
 export async function GET() {
   const mixes = await prisma.mix.findMany({
     orderBy: { createdAt: "desc" },
     include: { _count: { select: { videoJobs: true } } },
   });
-  return NextResponse.json(mixes);
+  return toJsonResponse(mixes);
 }
 
 export async function POST() {
+  const removed = await removeStaleMixes();
   const files = await scanMixesFolder();
   let added = 0;
 
@@ -33,7 +36,10 @@ export async function POST() {
     }
   }
 
-  await enqueueJob({ type: "scan_mixes" });
+  const { taskId } = await enqueueWithTask(
+    { type: "scan_mixes" },
+    { type: "scan_mixes", title: `Сканирование миксов (${files.length} файлов)` }
+  );
 
-  return NextResponse.json({ scanned: files.length, added });
+  return NextResponse.json({ scanned: files.length, added, removed, taskId });
 }

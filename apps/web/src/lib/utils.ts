@@ -37,6 +37,9 @@ export function statusLabel(status: string): string {
     uploading: "Загрузка",
     processing: "Обработка",
     published: "Опубликовано",
+    cancelled: "Отменено",
+    running: "Выполняется",
+    completed: "Завершено",
   };
   return map[status] || status;
 }
@@ -54,4 +57,50 @@ export function statusColor(status: string): string {
     published: "text-green-400",
   };
   return map[status] || "text-warm-300";
+}
+
+export function stageLabel(stage: string | null | undefined): string {
+  if (!stage) return "";
+  const map: Record<string, string> = {
+    waveform: "Построение waveform",
+    ai_cover: "AI-обложка",
+    render_prep: "Подготовка фона",
+    render_encode: "Кодирование видео",
+  };
+  return map[stage] || stage;
+}
+
+export function analyzeStageMessage(_progress: number): string {
+  return "Создание видео...";
+}
+
+export function templateLabel(template: string): string {
+  if (template === "waveform_gradient") return "Градиентный фон";
+  if (template === "waveform_image") return "Своя обложка";
+  return "Тёмный фон";
+}
+
+export function taskStageMessage(
+  type: string,
+  task: { progress: number; stage?: string | null; stageDetail?: string | null; status?: string }
+): string | null {
+  if (task.status === "pending") return "Ожидание worker...";
+  if (task.stageDetail) return task.stageDetail;
+  if (task.stage) return stageLabel(task.stage);
+  if (type === "scan_mixes" && task.progress < 90) {
+    return "Чтение длительности файлов...";
+  }
+  return null;
+}
+
+export function toJsonResponse(data: unknown, init?: ResponseInit): Response {
+  return new Response(
+    JSON.stringify(data, (_key, value) =>
+      typeof value === "bigint" ? value.toString() : value
+    ),
+    {
+      ...init,
+      headers: { "Content-Type": "application/json", ...init?.headers },
+    }
+  );
 }

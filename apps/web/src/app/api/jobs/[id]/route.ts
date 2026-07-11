@@ -1,5 +1,7 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { deleteVideoJob } from "@/lib/job-cleanup";
+import { toJsonResponse } from "@/lib/utils";
 
 export async function GET(
   _request: NextRequest,
@@ -17,10 +19,10 @@ export async function GET(
   });
 
   if (!job) {
-    return NextResponse.json({ error: "Job not found" }, { status: 404 });
+    return toJsonResponse({ error: "Job not found" }, { status: 404 });
   }
 
-  return NextResponse.json(job);
+  return toJsonResponse(job);
 }
 
 export async function PATCH(
@@ -40,7 +42,7 @@ export async function PATCH(
     },
   });
 
-  return NextResponse.json(job);
+  return toJsonResponse(job);
 }
 
 export async function DELETE(
@@ -48,6 +50,9 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> }
 ) {
   const { id } = await params;
-  await prisma.videoJob.delete({ where: { id } });
-  return NextResponse.json({ ok: true });
+  const result = await deleteVideoJob(id);
+  if ("error" in result) {
+    return toJsonResponse({ error: result.error }, { status: result.status });
+  }
+  return toJsonResponse({ ok: true });
 }

@@ -7,15 +7,6 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-model User {
-  id           String   @id @default(cuid())
-  email        String   @unique
-  passwordHash String
-  role         String   @default("admin")
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
-}
-
 model Mix {
   id           String     @id @default(cuid())
   filename     String
@@ -28,18 +19,26 @@ model Mix {
   createdAt    DateTime   @default(now())
   updatedAt    DateTime   @updatedAt
   videoJobs    VideoJob[]
+  backgrounds  MixBackground[]
 }
 
 model VideoJob {
   id              String          @id @default(cuid())
   mixId           String
   mix             Mix             @relation(fields: [mixId], references: [id], onDelete: Cascade)
-  template        String          @default("kenburns_fade")
+  template        String          @default("waveform_dark")
+  encodeSettings  Json?
+  backgroundId    String?
+  background      MixBackground?  @relation(fields: [backgroundId], references: [id], onDelete: SetNull)
   status          String          @default("pending")
   title           String?
   stylePrompt     String?
   errorMessage    String?
   progress        Int             @default(0)
+  stage           String?
+  stageProgress   Int             @default(0)
+  stageDetail     String?
+  cancelRequested Boolean         @default(false)
   segments        Segment[]
   generatedVideo  GeneratedVideo?
   youtubeUpload   YouTubeUpload?
@@ -47,6 +46,29 @@ model VideoJob {
   updatedAt       DateTime        @updatedAt
 
   @@index([status])
+  @@index([mixId])
+}
+
+model MixBackground {
+  id           String     @id @default(cuid())
+  mixId        String
+  mix          Mix        @relation(fields: [mixId], references: [id], onDelete: Cascade)
+  source       String
+  prompt       String?
+  negativePrompt String?
+  label        String?
+  imagePath    String?
+  width        Int        @default(1920)
+  height       Int        @default(1080)
+  sourceWidth  Int?
+  sourceHeight Int?
+  fitMode      String     @default("cover")
+  seed         Int?
+  status       String     @default("ready")
+  errorMessage String?
+  createdAt    DateTime   @default(now())
+  videoJobs    VideoJob[]
+
   @@index([mixId])
 }
 
@@ -101,4 +123,38 @@ model YouTubeCredential {
   channelTitle          String?
   channelId             String?
   updatedAt             DateTime @updatedAt
+}
+
+model AppSettings {
+  id                  String   @id @default("default")
+  encryptionKey       String
+  youtubeClientId     String?
+  youtubeClientSecret String?
+  comfyuiUrl          String?  @default("http://host.docker.internal:8000")
+  comfyuiCheckpoint   String?  @default("flux1-dev-fp8.safetensors")
+  comfyuiConnected    Boolean  @default(false)
+  comfyuiLastError    String?
+  appUrl              String   @default("http://localhost:3000")
+  updatedAt           DateTime @updatedAt
+}
+
+model BackgroundTask {
+  id              String   @id @default(cuid())
+  type            String
+  title           String
+  status          String   @default("pending")
+  progress        Int      @default(0)
+  stage           String?
+  stageProgress   Int      @default(0)
+  stageDetail     String?
+  videoJobId      String?
+  mixBackgroundId String?
+  uploadId        String?
+  cancelRequested Boolean  @default(false)
+  errorMessage    String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([status])
+  @@index([videoJobId])
 }

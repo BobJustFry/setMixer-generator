@@ -1,5 +1,5 @@
-import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { toJsonResponse } from "@/lib/utils";
 
 export async function GET() {
   const [mixCount, jobCount, videoCount, scheduledCount] = await Promise.all([
@@ -15,7 +15,7 @@ export async function GET() {
     include: { mix: true },
   });
 
-  return NextResponse.json({
+  return toJsonResponse({
     stats: { mixCount, jobCount, videoCount, scheduledCount },
     recentJobs,
   });

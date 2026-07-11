@@ -10,6 +10,10 @@ WORKDIR /app
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
+RUN groupadd -g 1001 appgroup && useradd -u 1001 -g appgroup --no-create-home appuser
+
 COPY . .
+
+USER appuser
 
 CMD ["python", "main.py"]

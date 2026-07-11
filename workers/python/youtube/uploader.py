@@ -13,18 +13,16 @@ import hashlib
 
 log = logging.getLogger("youtube")
 
-DATA_DIR = os.environ.get("DATA_DIR", "/data")
-YOUTUBE_CLIENT_ID = os.environ.get("YOUTUBE_CLIENT_ID", "")
-YOUTUBE_CLIENT_SECRET = os.environ.get("YOUTUBE_CLIENT_SECRET", "")
-ENCRYPTION_KEY = os.environ.get("ENCRYPTION_KEY", "default-32-byte-key-change-me!!!!")
+from config.settings import get_youtube_oauth
+from worker.parallel import normalize_database_url
 
 
 def _get_db():
-    return psycopg2.connect(os.environ["DATABASE_URL"])
+    return psycopg2.connect(normalize_database_url())
 
 
-def _decrypt(encrypted: str) -> str:
-    key = hashlib.sha256(ENCRYPTION_KEY.encode()).digest()
+def _decrypt(encrypted: str, encryption_key: str) -> str:
+    key = hashlib.sha256(encryption_key.encode()).digest()
     iv_hex, tag_hex, data = encrypted.split(":")
     iv = bytes.fromhex(iv_hex)
     tag = bytes.fromhex(tag_hex)
@@ -33,6 +31,10 @@ def _decrypt(encrypted: str) -> str:
 
 
 def _get_youtube_service():
+    client_id, client_secret, encryption_key = get_youtube_oauth()
+    if not client_id or not client_secret:
+        raise RuntimeError("YouTube OAuth не настроен в интерфейсе настроек")
+
     with _get_db() as conn:
         with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
             cur.execute('SELECT "encryptedRefreshToken" FROM "YouTubeCredential" WHERE id = %s', ("default",))
@@ -42,15 +44,15 @@ def _get_youtube_service():
 
     creds = Credentials(
         token=None,
-        refresh_token=_decrypt(row["encryptedRefreshToken"]),
+        refresh_token=_decrypt(row["encryptedRefreshToken"], encryption_key),
         token_uri="https://oauth2.googleapis.com/token",
-        client_id=YOUTUBE_CLIENT_ID,
-        client_secret=YOUTUBE_CLIENT_SECRET,
+        client_id=client_id,
+        client_secret=client_secret,
     )
     return build("youtube", "v3", credentials=creds)
 
 
-def upload_to_youtube(video_job_id: str, upload_id: str | None):
+def upload_to_youtube(video_job_id: str, upload_id: str | None, progress_callback=None, cancel_check=None):
     with _get_db() as conn:
         with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
             cur.execute(
@@ -103,9 +105,14 @@ def upload_to_youtube(video_job_id: str, upload_id: str | None):
     request = youtube.videos().insert(part="snippet,status", body=body, media_body=media)
     response = None
     while response is None:
+        if cancel_check and cancel_check():
+            raise RuntimeError("Отменено пользователем")
         status, response = request.next_chunk()
         if status:
-            log.info("Upload progress: %d%%", int(status.progress() * 100))
+            pct = int(status.progress() * 100)
+            log.info("Upload progress: %d%%", pct)
+            if progress_callback:
+                progress_callback(pct)
 
     youtube_id = response["id"]
     final_status = "scheduled" if upload.get("publishAt") else "published"
