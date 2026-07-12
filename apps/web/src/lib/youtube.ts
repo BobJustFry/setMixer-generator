@@ -81,6 +81,7 @@ export async function getYouTubeAuthUrl(): Promise<string> {
     scope: [
       "https://www.googleapis.com/auth/youtube.upload",
       "https://www.googleapis.com/auth/youtube.readonly",
+      "https://www.googleapis.com/auth/youtube.force-ssl",
     ],
   });
 }
@@ -254,4 +255,43 @@ export async function verifyYouTubeCredentials(): Promise<{ ok: boolean; error?:
 
 export async function disconnectYouTube() {
   await prisma.youTubeCredential.deleteMany({ where: { id: "default" } });
+}
+
+export interface YouTubePlaylist {
+  id: string;
+  title: string;
+  itemCount: number;
+}
+
+export async function listYouTubePlaylists(): Promise<YouTubePlaylist[]> {
+  const youtube = await getYouTubeClient();
+  const channelId = await getActiveYouTubeChannelId();
+  if (!channelId) {
+    throw new Error("YouTube-канал не выбран. Укажите канал в настройках.");
+  }
+
+  const playlists: YouTubePlaylist[] = [];
+  let pageToken: string | undefined;
+
+  do {
+    const res = await youtube.playlists.list({
+      part: ["snippet", "contentDetails"],
+      channelId,
+      maxResults: 50,
+      pageToken,
+    });
+
+    for (const item of res.data.items ?? []) {
+      if (!item.id || !item.snippet?.title) continue;
+      playlists.push({
+        id: item.id,
+        title: item.snippet.title,
+        itemCount: Number(item.contentDetails?.itemCount ?? 0),
+      });
+    }
+
+    pageToken = res.data.nextPageToken ?? undefined;
+  } while (pageToken);
+
+  return playlists.sort((a, b) => a.title.localeCompare(b.title, "ru"));
 }

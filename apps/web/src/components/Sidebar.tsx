@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import Image from "next/image";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import {
   LayoutDashboard,
   Music,
@@ -10,6 +10,7 @@ import {
   Film,
   Calendar,
   Settings,
+  LogOut,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -24,6 +25,13 @@ const navItems = [
 
 export function Sidebar() {
   const pathname = usePathname();
+  const router = useRouter();
+
+  async function logout() {
+    await fetch("/api/auth/logout", { method: "POST" });
+    router.push("/login");
+    router.refresh();
+  }
 
   return (
     <aside className="w-56 shrink-0 bg-sidebar-gradient border-r border-surface-border flex flex-col">
@@ -61,6 +69,17 @@ export function Sidebar() {
           </Link>
         ))}
       </nav>
+
+      <div className="p-3 border-t border-surface-border">
+        <button
+          type="button"
+          onClick={logout}
+          className="flex items-center gap-3 px-3 py-2 rounded-lg text-sm w-full text-warm-400 hover:text-warm-100 hover:bg-surface-overlay transition-colors"
+        >
+          <LogOut className="w-4 h-4" />
+          Выйти
+        </button>
+      </div>
     </aside>
   );
 }

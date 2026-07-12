@@ -66,6 +66,7 @@ export function stageLabel(stage: string | null | undefined): string {
     ai_cover: "AI-обложка",
     render_prep: "Подготовка фона",
     render_encode: "Кодирование видео",
+    youtube_upload: "Отправка на YouTube",
   };
   return map[stage] || stage;
 }

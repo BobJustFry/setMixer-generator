@@ -63,6 +63,24 @@ docker compose -f docker-compose.yml -f docker-compose.https.yml up -d --build
 
 ---
 
+## Защита паролем
+
+Панель закрыта паролем (`APP_PASSWORD` в `.env`). Без входа доступны только:
+
+- `/login` — форма входа
+- `/api/youtube/callback` — редирект Google OAuth (без пароля)
+
+**Защита от перебора:** после 5 неверных попыток с одного IP — блокировка на 30 минут (Redis).
+
+```env
+APP_PASSWORD=ваш_сильный_пароль
+SESSION_SECRET=случайная_строка_32_символа
+```
+
+Перезапуск: `docker compose -f docker-compose.yml -f docker-compose.https.yml up -d --build web`
+
+---
+
 ## Вернуться на HTTP :3000
 
 ```powershell

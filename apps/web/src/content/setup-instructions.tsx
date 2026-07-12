@@ -172,6 +172,7 @@ export function YouTubeInstructions({ appUrl }: { appUrl: string }) {
             Scopes — добавьте:
             <Code>https://www.googleapis.com/auth/youtube.upload</Code>
             <Code>https://www.googleapis.com/auth/youtube.readonly</Code>
+            <Code>https://www.googleapis.com/auth/youtube.force-ssl</Code>
           </li>
           <li>
             В <strong className="text-warm-300">Test users</strong> добавьте email Google-аккаунта с

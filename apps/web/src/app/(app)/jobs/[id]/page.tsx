@@ -3,16 +3,17 @@
 import { useEffect, useState, useCallback } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
-import { ArrowLeft, Play, Loader2, Trash2 } from "lucide-react";
+import { ArrowLeft, Play, Loader2, Trash2, Upload } from "lucide-react";
 import { LoadingButton } from "@/components/LoadingButton";
 import { useTasks } from "@/components/TaskProvider";
 import { PageHeader, Card } from "@/components/ui";
 import { StatusBadge } from "@/components/StatusBadge";
-import { JobProgressSpinner } from "@/components/JobProgressDisplay";
+import { JobProgressDisplay, JobProgressSpinner } from "@/components/JobProgressDisplay";
 import { WaveformPreviewCard } from "@/components/WaveformPreviewCard";
 import { formatDuration, templateLabel } from "@/lib/utils";
 import { videoEffectLabel } from "@/lib/video-effects";
 import { parseEncodeSettings } from "@/lib/encode-settings";
+import { canScheduleYoutubeUpload } from "@/lib/youtube-upload-status";
 
 interface Job {
   id: string;
@@ -37,7 +38,12 @@ interface Job {
     outputPath: string;
     durationSec: number | null;
   } | null;
-  youtubeUpload: { id: string; uploadStatus: string; youtubeVideoId: string | null } | null;
+  youtubeUpload: {
+    id: string;
+    uploadStatus: string;
+    youtubeVideoId: string | null;
+    errorMessage?: string | null;
+  } | null;
 }
 
 export default function JobDetailPage() {
@@ -127,6 +133,18 @@ export default function JobDetailPage() {
       ["pending", "running"].includes(t.status) &&
       (t.type === "analyze" || t.type === "render")
   );
+  const activeYoutubeTask = active.find(
+    (t) =>
+      t.videoJobId === job.id &&
+      t.type === "youtube_upload" &&
+      ["pending", "running"].includes(t.status)
+  );
+  const isYoutubeUploading =
+    Boolean(activeYoutubeTask) || job.youtubeUpload?.uploadStatus === "uploading";
+  const youtubeProgressState = {
+    progress: activeYoutubeTask?.progress ?? 0,
+    status: activeYoutubeTask?.status ?? "running",
+  };
   const progressState = {
     progress: activeTask?.progress ?? job.progress,
     stage: activeTask?.stage ?? job.stage,
@@ -140,6 +158,10 @@ export default function JobDetailPage() {
   const showWaveformSection =
     Boolean(job.mix.waveformPath) || isWorking || job.status === "analyzing";
   const canRerender = job.mix.waveformPath && !job.generatedVideo && !isWorking;
+  const canSendToYoutube = canScheduleYoutubeUpload(
+    job.youtubeUpload,
+    Boolean(activeYoutubeTask)
+  );
   const canDeleteJob = !isWorking && job.status !== "pending" && !job.youtubeUpload?.youtubeVideoId;
   const encode = parseEncodeSettings(job.encodeSettings);
   const effectLabel = videoEffectLabel(encode.videoEffect);
@@ -213,6 +235,25 @@ export default function JobDetailPage() {
         </Card>
       )}
 
+      {isYoutubeUploading && (
+        <Card className="p-4 mb-4 border-red-500/25 bg-red-500/[0.04]">
+          <div className="flex items-start gap-3">
+            {youtubeProgressState.status === "pending" ? (
+              <Loader2 className="w-5 h-5 animate-spin text-red-400 shrink-0 mt-0.5" />
+            ) : (
+              <Upload className="w-5 h-5 text-red-400 shrink-0 mt-0.5" />
+            )}
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-medium text-warm-100 mb-3">Отправка на YouTube</p>
+              <JobProgressDisplay state={youtubeProgressState} variant="youtube" />
+              <p className="text-xs text-warm-600 mt-2">
+                Большие видео загружаются долго — не закрывайте страницу.
+              </p>
+            </div>
+          </div>
+        </Card>
+      )}
+
       {showWaveformSection && (
         <Card className="p-4 mb-4">
           <p className="text-xs text-warm-500 mb-2">Waveform (Denon)</p>
@@ -224,6 +265,7 @@ export default function JobDetailPage() {
             isBuilding={isBuildingWaveform}
             stageDetail={progressState.stageDetail}
             stageProgress={progressState.stageProgress}
+            fillProgress={isWorking && job.mix.waveformPath ? progressState.progress : null}
           />
           {job.mix.durationSec && (
             <p className="text-xs text-warm-500 mt-2">
@@ -236,6 +278,16 @@ export default function JobDetailPage() {
       {job.generatedVideo && (
         <Card className="p-4 mb-4">
           <p className="text-sm text-green-400 font-medium mb-3">Видео готово</p>
+          {job.youtubeUpload?.uploadStatus === "failed" && (
+            <div className="mb-3 p-3 rounded-lg border border-red-500/30 bg-red-500/5">
+              <p className="text-sm text-red-400 font-medium">Ошибка отправки на YouTube</p>
+              {job.youtubeUpload.errorMessage && (
+                <p className="text-xs text-red-400/90 mt-1 break-words">
+                  {job.youtubeUpload.errorMessage}
+                </p>
+              )}
+            </div>
+          )}
           <div className="rounded-lg overflow-hidden bg-black border border-surface-border mb-3">
             <video
               controls
@@ -251,9 +303,25 @@ export default function JobDetailPage() {
             <Link href="/videos" className="btn-secondary text-xs">
               К списку видео
             </Link>
-            {!job.youtubeUpload && (
+            {!job.youtubeUpload?.youtubeVideoId && (
+              <>
+                {job.youtubeUpload?.uploadStatus === "failed" ? (
+                  <StatusBadge status="failed" />
+                ) : job.youtubeUpload ? (
+                  <StatusBadge status={job.youtubeUpload.uploadStatus} />
+                ) : null}
+              </>
+            )}
+            {canSendToYoutube && (
               <Link href={`/schedule?job=${job.id}`} className="btn-primary text-xs">
-                Запланировать на YouTube
+                {job.youtubeUpload?.uploadStatus === "failed"
+                  ? "Повторить отправку на YouTube"
+                  : "Запланировать на YouTube"}
+              </Link>
+            )}
+            {!canSendToYoutube && job.youtubeUpload && !job.youtubeUpload.youtubeVideoId && (
+              <Link href="/schedule" className="btn-secondary text-xs">
+                Статус в расписании
               </Link>
             )}
             <LoadingButton

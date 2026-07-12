@@ -38,6 +38,9 @@ log = logging.getLogger("worker")
 QUEUE_KEY = "setmixer:job_queue"
 DATA_DIR = os.environ.get("DATA_DIR", "/data")
 
+# YouTube uploads can run 10–30+ min — do not block analyze/render queue
+_upload_executor = ThreadPoolExecutor(max_workers=2, thread_name_prefix="yt-upload")
+
 
 def get_db():
     return psycopg2.connect(normalize_database_url())
@@ -547,6 +550,14 @@ def process_job(payload: dict):
         fail_task(task_id, f"Unknown job type: {job_type}")
 
 
+def _run_job_safe(payload: dict):
+    try:
+        process_job(payload)
+    except Exception:
+        log.exception("Job failed")
+        fail_task(payload.get("taskId"), "Внутренняя ошибка worker")
+
+
 def main():
     r = get_redis()
     threads = worker_count()
@@ -561,11 +572,11 @@ def main():
             raw = result[1].decode() if isinstance(result[1], bytes) else result[1]
             payload = json.loads(raw)
 
-            try:
-                process_job(payload)
-            except Exception:
-                log.exception("Job failed")
-                fail_task(payload.get("taskId"), "Внутренняя ошибка worker")
+            if payload.get("type") == "youtube_upload":
+                log.info("Queueing YouTube upload in background thread (task=%s)", payload.get("taskId"))
+                _upload_executor.submit(_run_job_safe, payload)
+            else:
+                _run_job_safe(payload)
 
         except redis.ConnectionError:
             log.warning("Redis connection lost, retrying...")

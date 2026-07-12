@@ -10,6 +10,8 @@ interface WaveformPreviewCardProps {
   isBuilding: boolean;
   stageDetail?: string | null;
   stageProgress?: number;
+  /** 0–100: grey timeline fill while analyze/render is in progress */
+  fillProgress?: number | null;
 }
 
 export function WaveformPreviewCard({
@@ -20,6 +22,7 @@ export function WaveformPreviewCard({
   isBuilding,
   stageDetail,
   stageProgress = 0,
+  fillProgress,
 }: WaveformPreviewCardProps) {
   const [loaded, setLoaded] = useState(false);
   const [failed, setFailed] = useState(false);
@@ -35,6 +38,9 @@ export function WaveformPreviewCard({
 
   const showLoading = isBuilding || (!loaded && !failed);
   const showError = failed && !loaded && !isBuilding;
+  const showWaveform = loaded && !showLoading;
+  const fillPct =
+    fillProgress != null ? Math.min(Math.max(fillProgress, 0), 100) : null;
 
   return (
     <div className="rounded-lg overflow-hidden bg-[#0e0e14] border border-surface-border min-h-[88px]">
@@ -44,11 +50,32 @@ export function WaveformPreviewCard({
           progress={isBuilding ? stageProgress : undefined}
         />
       )}
-      {url && (
+      {url && showWaveform && (
+        <div className="relative">
+          <img src={url} alt="" className="w-full h-auto block" />
+          {fillPct != null && fillPct > 0 && (
+            <>
+              <div
+                className="absolute inset-y-0 left-0 bg-white/12 pointer-events-none transition-[width] duration-500 ease-out"
+                style={{ width: `${fillPct}%` }}
+              />
+              <div
+                className="absolute inset-y-0 bg-black/30 pointer-events-none transition-[left] duration-500 ease-out"
+                style={{ left: `${fillPct}%`, right: 0 }}
+              />
+              <div
+                className="absolute inset-y-0 w-px bg-white/25 pointer-events-none transition-[left] duration-500 ease-out"
+                style={{ left: `${fillPct}%` }}
+              />
+            </>
+          )}
+        </div>
+      )}
+      {url && !showWaveform && (
         <img
           src={url}
           alt=""
-          className={`w-full h-auto block ${loaded ? "" : "hidden"}`}
+          className="hidden"
           onLoad={() => {
             setLoaded(true);
             setFailed(false);

@@ -14,15 +14,18 @@ export interface ProgressState {
 interface JobProgressDisplayProps {
   state: ProgressState;
   compact?: boolean;
+  variant?: "default" | "youtube";
 }
 
-export function JobProgressDisplay({ state, compact }: JobProgressDisplayProps) {
+export function JobProgressDisplay({ state, compact, variant = "default" }: JobProgressDisplayProps) {
   const isDone = state.status === "completed" || state.status === "ready";
   const overall = isDone ? (state.progress ?? 0) : Math.min(state.progress ?? 0, 99);
   const stagePct = state.stageProgress ?? 0;
   const stageName = stageLabel(state.stage);
   const detail = state.stageDetail || stageName || "Выполняется...";
   const isPending = state.status === "pending";
+  const barClass = variant === "youtube" ? "bg-red-500/80" : "bg-accent/80";
+  const pctClass = variant === "youtube" ? "text-red-400" : "text-accent";
 
   return (
     <div className={compact ? "space-y-1.5" : "space-y-3"}>
@@ -31,13 +34,13 @@ export function JobProgressDisplay({ state, compact }: JobProgressDisplayProps) 
           <span className={`text-warm-400 ${compact ? "text-xs" : "text-sm"}`}>
             {isPending ? "Ожидание worker..." : "Общий прогресс"}
           </span>
-          <span className={`text-accent font-mono shrink-0 ${compact ? "text-xs" : "text-sm"}`}>
+          <span className={`${pctClass} font-mono shrink-0 ${compact ? "text-xs" : "text-sm"}`}>
             {overall}%
           </span>
         </div>
         <div className={`bg-surface-overlay rounded-full overflow-hidden ${compact ? "h-1" : "h-1.5"}`}>
           <div
-            className="h-full bg-accent/80 rounded-full transition-all duration-300 ease-out"
+            className={`h-full ${barClass} rounded-full transition-all duration-300 ease-out`}
             style={{ width: `${Math.max(overall, isPending ? 2 : 0)}%` }}
           />
         </div>

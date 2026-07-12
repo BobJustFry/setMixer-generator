@@ -59,7 +59,9 @@ def is_cancelled(task_id: str | None = None, video_job_id: str | None = None) ->
                     (task_id,),
                 )
                 row = cur.fetchone()
-                if row and (row["cancelRequested"] or row["status"] == "cancelled"):
+                if not row:
+                    return True
+                if row["cancelRequested"] or row["status"] == "cancelled":
                     return True
             if video_job_id:
                 cur.execute(

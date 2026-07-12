@@ -1,7 +1,7 @@
 import os
 import json
 import logging
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 
 import psycopg2
 import psycopg2.extras
@@ -57,6 +57,31 @@ def _get_youtube_service():
     return build("youtube", "v3", credentials=creds)
 
 
+MIN_PUBLISH_LEAD = timedelta(minutes=15)
+
+
+def _normalize_publish_at(pub) -> datetime:
+    if isinstance(pub, str):
+        pub = datetime.fromisoformat(pub.replace("Z", "+00:00"))
+    if not isinstance(pub, datetime):
+        raise RuntimeError("Некорректная дата публикации")
+    if pub.tzinfo is None:
+        pub = pub.replace(tzinfo=timezone.utc)
+    return pub.astimezone(timezone.utc)
+
+
+def _format_publish_at(pub) -> str:
+    pub_utc = _normalize_publish_at(pub)
+    now = datetime.now(timezone.utc)
+    if pub_utc < now + MIN_PUBLISH_LEAD:
+        mins = int(MIN_PUBLISH_LEAD.total_seconds() // 60)
+        raise RuntimeError(
+            f"Дата публикации слишком ранняя ({pub_utc.strftime('%Y-%m-%d %H:%M UTC')}). "
+            f"YouTube требует минимум {mins} минут от текущего момента — выберите более позднее время."
+        )
+    return pub_utc.strftime("%Y-%m-%dT%H:%M:%S.000Z")
+
+
 def upload_to_youtube(video_job_id: str, upload_id: str | None, progress_callback=None, cancel_check=None):
     with _get_db() as conn:
         with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
@@ -85,6 +110,9 @@ def upload_to_youtube(video_job_id: str, upload_id: str | None, progress_callbac
 
     youtube = _get_youtube_service()
 
+    has_schedule = bool(upload.get("publishAt"))
+    privacy = "private" if has_schedule else (upload["privacyStatus"] or "private")
+
     body: dict = {
         "snippet": {
             "title": upload["title"],
@@ -93,17 +121,14 @@ def upload_to_youtube(video_job_id: str, upload_id: str | None, progress_callbac
             "categoryId": upload["categoryId"] or "10",
         },
         "status": {
-            "privacyStatus": upload["privacyStatus"] or "private",
+            "privacyStatus": privacy,
             "selfDeclaredMadeForKids": False,
         },
     }
 
-    if upload.get("publishAt"):
-        pub = upload["publishAt"]
-        if isinstance(pub, datetime):
-            if pub.tzinfo is None:
-                pub = pub.replace(tzinfo=timezone.utc)
-            body["status"]["publishAt"] = pub.strftime("%Y-%m-%dT%H:%M:%S.000Z")
+    if has_schedule:
+        body["status"]["publishAt"] = _format_publish_at(upload["publishAt"])
+        log.info("Scheduled publish at %s (privacy=private)", body["status"]["publishAt"])
 
     media = MediaFileUpload(video_path, mimetype="video/mp4", resumable=True, chunksize=10 * 1024 * 1024)
 
@@ -121,6 +146,28 @@ def upload_to_youtube(video_job_id: str, upload_id: str | None, progress_callbac
 
     youtube_id = response["id"]
     final_status = "scheduled" if upload.get("publishAt") else "published"
+
+    playlist_id = upload.get("playlistId")
+    if playlist_id:
+        try:
+            youtube.playlistItems().insert(
+                part="snippet",
+                body={
+                    "snippet": {
+                        "playlistId": playlist_id,
+                        "resourceId": {
+                            "kind": "youtube#video",
+                            "videoId": youtube_id,
+                        },
+                    }
+                },
+            ).execute()
+            log.info("Added to playlist %s: %s", playlist_id, youtube_id)
+        except Exception as e:
+            log.exception("Failed to add video to playlist")
+            raise RuntimeError(
+                f"Видео загружено ({youtube_id}), но не добавлено в плейлист: {e}"
+            ) from e
 
     with _get_db() as conn:
         with conn.cursor() as cur:

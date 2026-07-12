@@ -111,6 +111,8 @@ model YouTubeUpload {
   categoryId      String    @default("10")
   privacyStatus   String    @default("private")
   publishAt       DateTime?
+  playlistId      String?
+  playlistTitle   String?
   uploadStatus    String    @default("draft")
   youtubeVideoId  String?
   errorMessage    String?

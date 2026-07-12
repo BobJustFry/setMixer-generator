@@ -10,7 +10,7 @@
 
 1. [Google Cloud Console](https://console.cloud.google.com/) → проект
 2. Включить [YouTube Data API v3](https://console.cloud.google.com/apis/library/youtube.googleapis.com)
-3. [OAuth consent screen](https://console.cloud.google.com/auth/audience) → External, scopes upload + readonly, **Test users** = ваш email
+3. [OAuth consent screen](https://console.cloud.google.com/auth/audience) → External, scopes **upload**, **readonly**, **force-ssl**, **Test users** = ваш email
 4. [OAuth Client](https://console.cloud.google.com/auth/clients) → Web application:
    - **JavaScript origins:** `http://localhost:3000`
    - **Redirect URI:** `http://localhost:3000/api/youtube/callback`
@@ -28,6 +28,12 @@
 ## Шифрование токенов
 
 Задайте `ENCRYPTION_KEY` в `.env` или через интерфейс (32+ случайных символов). Без ключа токены хранятся в БД без шифрования.
+
+## Плейлисты
+
+На странице **Расписание YouTube** можно выбрать плейлист канала — видео будет добавлено в него после загрузки.
+
+Для этого нужен scope `youtube.force-ssl`. Если плейлисты не загружаются после обновления — **Настройки → отключить YouTube → Авторизоваться в Google** заново.
 
 ## Отложенная публикация
 

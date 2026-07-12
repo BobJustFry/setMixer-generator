@@ -80,6 +80,16 @@ export default function VideosPage() {
                 <div className="flex items-center gap-2 shrink-0">
                   {video.videoJob.youtubeUpload?.youtubeVideoId ? (
                     <StatusBadge status={video.videoJob.youtubeUpload.uploadStatus} />
+                  ) : video.videoJob.youtubeUpload?.uploadStatus === "failed" ? (
+                    <>
+                      <StatusBadge status="failed" />
+                      <Link
+                        href={`/schedule?job=${video.videoJob.id}`}
+                        className="btn-primary text-xs"
+                      >
+                        Повторить
+                      </Link>
+                    </>
                   ) : (
                     <>
                       <Link
